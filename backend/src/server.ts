@@ -23,7 +23,7 @@ app.use('/api/auth/',authRoute);
 
 //private route
 app.use(authMiddleware);
-app.use('/api/', userRoute);
+app.use('/api/user', userRoute);
 connectDb().then(() => {
     app.listen(PORT, () => {
         console.log(`Server đang chạy trên ${PORT}`);

@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import SignInPage from "./pages/signInPage";
-import SignUpPage from "./pages/signUpPage";
+import SignInPage from "./pages/SignInPage";
+import SignUpPage from "./pages/SignUpPage";
 import ChatAppPage from "./pages/ChatAppPage";
 import { Toaster } from "sonner";
+import ProtectedRouter from "./components/auth/ProtectedRouter";
 
 function App() {
   return (
@@ -11,16 +12,18 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Default route */}
-          <Route path="/" element={<Navigate to="/signin" replace />} />
-          
+          <Route path="/" element={<Navigate to="/login" replace />} />
+
           {/* Public routes */}
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/signin" element={<SignInPage />} />
+          <Route path="/register" element={<SignUpPage />} />
+          <Route path="/login" element={<SignInPage />} />
 
           {/* Private routes */}
-          <Route path="/chat" element={<ChatAppPage />} />
+          <Route element={<ProtectedRouter />}>
+            <Route path="/chat" element={<ChatAppPage />} />
+          </Route>
         </Routes>
-      </BrowserRouter> 
+      </BrowserRouter>
     </>
   );
 }

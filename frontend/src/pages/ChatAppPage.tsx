@@ -30,6 +30,7 @@ import {
   Bell,
   Archive,
 } from "lucide-react";
+import Logout from "@/components/auth/Logout";
 
 interface Message {
   id: string;
@@ -122,7 +123,7 @@ const ChatAppPage = () => {
   return (
     <div className="h-screen bg-background flex">
       {/* Sidebar */}
-      <div className="w-80 border-r border-border flex flex-col">
+      <div className="border-r border-border flex flex-col overflow-y-hidden hidden md:flex">
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
@@ -131,6 +132,7 @@ const ChatAppPage = () => {
                 <MessageCircle className="w-6 h-6 text-primary" />
               </div>
               <h1 className="text-xl font-bold">ChatApp</h1>
+              <LogOut />
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon">
@@ -155,8 +157,7 @@ const ChatAppPage = () => {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Đăng xuất</span>
+                    <Logout />
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -213,11 +214,17 @@ const ChatAppPage = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-sm truncate">{contact.name}</h3>
-                      <span className="text-xs text-muted-foreground">{contact.timestamp}</span>
+                      <h3 className="font-medium text-sm truncate">
+                        {contact.name}
+                      </h3>
+                      <span className="text-xs text-muted-foreground">
+                        {contact.timestamp}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <p className="text-sm text-muted-foreground truncate">{contact.lastMessage}</p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {contact.lastMessage}
+                      </p>
                       {contact.unreadCount && (
                         <Badge variant="default" className="h-5 text-xs">
                           {contact.unreadCount}
@@ -289,7 +296,9 @@ const ChatAppPage = () => {
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       )}
                       <p className="text-sm text-muted-foreground">
-                        {selectedContact.isOnline ? "Đang hoạt động" : "Không hoạt động"}
+                        {selectedContact.isOnline
+                          ? "Đang hoạt động"
+                          : "Không hoạt động"}
                       </p>
                     </div>
                   </div>
@@ -332,7 +341,9 @@ const ChatAppPage = () => {
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}
+                    className={`flex ${
+                      message.isOwn ? "justify-end" : "justify-start"
+                    }`}
                   >
                     <div className="flex items-start gap-2 max-w-xs lg:max-w-md">
                       {!message.isOwn && (
@@ -352,7 +363,9 @@ const ChatAppPage = () => {
                         <p className="text-sm">{message.content}</p>
                         <p
                           className={`text-xs mt-1 ${
-                            message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                            message.isOwn
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground"
                           }`}
                         >
                           {message.timestamp}
@@ -378,7 +391,11 @@ const ChatAppPage = () => {
                     onKeyPress={handleKeyPress}
                     className="pr-10"
                   />
-                  <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                  >
                     <Smile className="w-4 h-4" />
                   </Button>
                 </div>
@@ -396,8 +413,12 @@ const ChatAppPage = () => {
                 <MessageCircle className="w-12 h-12 text-primary" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-semibold">Chào mừng đến với ChatApp</h3>
-                <p className="text-muted-foreground">Chọn một cuộc trò chuyện để bắt đầu nhắn tin</p>
+                <h3 className="text-2xl font-semibold">
+                  Chào mừng đến với ChatApp
+                </h3>
+                <p className="text-muted-foreground">
+                  Chọn một cuộc trò chuyện để bắt đầu nhắn tin
+                </p>
               </div>
               <div className="flex justify-center gap-4">
                 <Button variant="outline">

@@ -103,3 +103,32 @@ export const signOut = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Đã xảy ra lỗi khi signOut." });
   }
 };
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    //lấy refesh token từ cookie
+    const token = req.cookies?.refreshToken;
+    if (!token) {
+      return res.status(400).json({ message: "Không tìm thấy refresh token." });
+    }
+    //so với refresh token trong db
+    const session = await Session.findOne({ refreshToken: token});
+    if (!session) {
+      return res.status(401).json({ message: "Refresh token không hợp lệ." });
+    }
+    //kiểm tra thời gian hết hạn
+    if (session.expiresAt < new Date()) {
+      return res.status(401).json({ message: "Refresh token đã hết hạn." });
+    }
+    //tạo mới access token
+    const accessToken = jwt.sign({
+      userId: session.userId,
+    },process.env.ACCESS_TOKEN_SECRET!,{
+      expiresIn: ACCESS_TOKEN_TTL
+    })
+    //return access token mới
+    return res.status(200).json({ accessToken });
+  } catch (error) {
+    console.error("Lỗi khi làm mới token:", error);
+    return res.status(500).json({ message: "Đã xảy ra lỗi khi làm mới token." });
+  }
+}

@@ -27,16 +27,8 @@ export function SigninForm({
   const onSubmit = async (data: SignInFormValues) => {
     console.log("Sign in form submitted:", data);
     // TODO: Implement API call to /api/auth/login
-    try {
-      await signIn(data.username, data.password).then((res: any)=>{
-        if(!res.error){
-          // Handle successful login
-          navigate('/chat');
-        }
-      });
-    } catch (error) {
-      console.error("Login failed:", error);
-    }
+    await signIn(data.username, data.password);
+    navigate('/chat');
   };
 
   return (
