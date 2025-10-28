@@ -1,0 +1,84 @@
+// 📘 Chat App Database Diagram
+// ✅ Compatible with dbdiagram.io (no syntax errors)
+
+Table users {
+  _id ObjectId [pk]
+  firstName string [not null]
+  lastName string [not null]
+  displayName string [not null, note: 'Tên hiển thị']
+  username string [unique, not null, note: 'Dùng để đăng nhập']
+  password string [not null, note: 'Đã mã hoá (bcrypt)']
+  phone string
+  dob date
+  avatar string
+  bio string
+  friends ObjectId[] [ref: > users._id, note: 'Danh sách bạn bè']
+  createdAt datetime [default: "CURRENT_TIMESTAMP"]
+  updatedAt datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table refresh_tokens {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > users._id, not null]
+  token string [not null, note: 'Refresh token (đã hash)']
+  expiresAt datetime [not null]
+  revoked boolean [default: false]
+  replacedBy string
+  createdAt datetime [default: "CURRENT_TIMESTAMP"]
+  updatedAt datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table friend_requests {
+  _id ObjectId [pk]
+  fromUserId ObjectId [ref: > users._id, not null]
+  toUserId ObjectId [ref: > users._id, not null]
+  status string [not null, note: 'pending | accepted | declined | cancelled']
+  message string
+  createdAt datetime [default: "CURRENT_TIMESTAMP"]
+  updatedAt datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table conversations {
+  _id ObjectId [pk]
+  type string [not null, note: 'direct | group']
+  name string
+  members ObjectId[] [ref: > users._id]
+  admins ObjectId[] [ref: > users._id]
+  lastMessageId ObjectId [ref: > messages._id, note: 'Tin nhắn cuối cùng']
+  createdAt datetime [default: "CURRENT_TIMESTAMP"]
+  updatedAt datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table messages {
+  _id ObjectId [pk]
+  conversationId ObjectId [ref: > conversations._id, not null]
+  senderId ObjectId [ref: > users._id, not null]
+  text string
+  attachments json [note: 'Danh sách file/hình gửi kèm']
+  readBy ObjectId[] [ref: > users._id]
+  createdAt datetime [default: "CURRENT_TIMESTAMP"]
+  updatedAt datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table conversation_members {
+  _id ObjectId [pk]
+  conversationId ObjectId [ref: > conversations._id, not null]
+  userId ObjectId [ref: > users._id, not null]
+  role string [default: "member", note: 'member | admin']
+  lastReadAt datetime
+  mutedUntil datetime
+  joinedAt datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table notifications {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > users._id, not null]
+  type string [note: 'friend_request | message | system']
+  referenceId ObjectId [note: 'ID liên quan (request/message/...)']
+  title string
+  body string
+  isRead boolean [default: false]
+  createdAt datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+

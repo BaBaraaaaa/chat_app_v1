@@ -9,6 +9,7 @@ export interface IUser extends Document {
   avatarUrl?: string | null;
   avatarId?: string | null;
   phone?: string | null;
+  friends?: string[]; // Danh sách bạn bè
 }
 const userSchema = new mongoose.Schema(
   {
@@ -33,6 +34,7 @@ const userSchema = new mongoose.Schema(
     avatarId: { type: String }, // cloundinary public id để xóa hình
     bio: { type: String, maxlength: 160, default: "" },
     phone: { type: String, sparse: true }, // sparse cho phép null và unique cùng tồn tại
+    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // danh sách bạn bè
   },
   { timestamps: true }
 ); //tự động tạo createdAt và updatedAt
