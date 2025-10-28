@@ -33,19 +33,22 @@ export function SignupForm({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<SignUpFormValues>({ resolver : zodResolver(signUpSchema) });
+  } = useForm<SignUpFormValues>({ resolver: zodResolver(signUpSchema) });
 
   const onSubmit = async (data: SignUpFormValues) => {
     console.log("Form data:", data);
-    await signUp(data.username, data.password, data.email, data.firstName, data.lastName).then((res: any)=>{
-      if(!res.error){
-navigate('/signin');
-      }
-      navigate('/');
-    }).catch((error)=>{
-      console.log(error);
-    });;
+    const result = await signUp(
+      data.username,
+      data.password,
+      data.email,
+      data.firstName,
+      data.lastName
+    );
     
+    if (result.success) {
+      navigate("/login");
+    }
+    // Lỗi đã được xử lý trong store với toast
   };
 
   return (
@@ -121,7 +124,9 @@ navigate('/signin');
                       />
                     </div>
                     {errors.firstName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.firstName.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -147,7 +152,9 @@ navigate('/signin');
                       />
                     </div>
                     {errors.lastName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.lastName.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -174,7 +181,9 @@ navigate('/signin');
                     />
                   </div>
                   {errors.username && (
-                    <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.username.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -200,7 +209,9 @@ navigate('/signin');
                     />
                   </div>
                   {errors.email && (
-                    <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.email.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -239,7 +250,9 @@ navigate('/signin');
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.password.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -278,7 +291,9 @@ navigate('/signin');
                       </button>
                     </div>
                     {errors.confirmPassword && (
-                      <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.confirmPassword.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -360,7 +375,7 @@ navigate('/signin');
                 <p className="text-gray-600">
                   Đã có tài khoản?{" "}
                   <a
-                    href="/signin"
+                    href="/login"
                     className="font-bold text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
                   >
                     Đăng nhập ngay

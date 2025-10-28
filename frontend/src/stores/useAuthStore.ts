@@ -28,9 +28,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       //gọi api
       await authService.signUp(username, password, email, firstName, lastName);
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
+      return { success: true };
     } catch (error) {
       console.log(error);
       toast.error("Đăng ký thất bại! Vui lòng thử lại.");
+      return { success: false, error };
     } finally {
       set({ loading: false });
     }

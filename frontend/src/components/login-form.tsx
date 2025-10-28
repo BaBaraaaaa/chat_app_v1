@@ -197,7 +197,7 @@ export function SigninForm({
                 <p className="text-center text-sm text-gray-600 mt-6">
                   Chưa có tài khoản?{" "}
                   <a
-                    href="/signup"
+                    href="/register"
                     className="font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors"
                   >
                     Đăng ký ngay
