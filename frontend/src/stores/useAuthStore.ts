@@ -7,9 +7,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   user: null,
   loading: false,
+  hasLoggedOut:
+    typeof window !== "undefined"
+      ? localStorage.getItem("hasLoggedOut") === "true"
+      : false,
 
   clearState: () => {
-    set({ accessToken: null, user: null, loading: false });
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hasLoggedOut", "true");
+    }
+    set({ accessToken: null, user: null, loading: false, hasLoggedOut: true });
   },
   setAccessToken: (accessToken: string | null) => {
     set({ accessToken });
@@ -34,6 +41,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { accessToken } = await authService.signIn(username, password);
       get().setAccessToken(accessToken);
       await get().fetchMe();
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("hasLoggedOut");
+      }
+      set({ hasLoggedOut: false }); // Reset logout flag khi đăng nhập thành công
       toast.success("Đăng nhập thành công");
     } catch (error) {
       console.log(error);
@@ -44,14 +55,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   signOut: async () => {
     try {
-      get().clearState();
       set({ loading: true });
       await authService.signOut();
-      toast.success("Đăng xuất thành công");
     } catch (error) {
       console.log(error);
       toast.error("Đăng xuất thất bại! Vui lòng thử lại.");
     } finally {
+      get().clearState();
+      toast.success("Đăng xuất thành công");
       set({ loading: false });
     }
   },
@@ -69,6 +80,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   refresh: async () => {
+    const { hasLoggedOut } = get();
+    if (hasLoggedOut) {
+      console.log("Người dùng đã đăng xuất, không làm mới token");
+      return null;
+    }
     try {
       set({ loading: true });
       const accessToken = await authService.refresh();

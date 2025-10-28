@@ -2,7 +2,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthInit } from "@/hooks/useAuthInit";
 
-const ProtectedRouter = () => {
+const PublicRoute = () => {
   const { loading } = useAuthStore();
   const { isInitialized, isAuthenticated } = useAuthInit();
 
@@ -14,11 +14,11 @@ const ProtectedRouter = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/chat" replace />;
   }
 
   return <Outlet />;
 };
 
-export default ProtectedRouter;
+export default PublicRoute;

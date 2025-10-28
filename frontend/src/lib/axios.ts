@@ -26,6 +26,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const { accessToken } = useAuthStore.getState();
+    
     //danh sách các endpoint không cần refresh token
     const excludedEndpoints = [
       "/auth/login",
@@ -33,31 +35,39 @@ api.interceptors.response.use(
       "/auth/refresh-token",
       "/auth/logout",
     ];
+    
+    // Chỉ thực hiện refresh token nếu:
+    // 1. Có access token (người dùng đã đăng nhập)
+    // 2. Lỗi 403
+    // 3. Không phải endpoint loại trừ
     if (
-      originalRequest.url.includes("/auth/refresh-token") ||
-      excludedEndpoints.some((endpoint) =>
-        originalRequest.url.includes(endpoint)
+      accessToken &&
+      error.response?.status === 403 &&
+      !excludedEndpoints.some((endpoint) =>
+        originalRequest.url?.includes(endpoint)
       )
     ) {
-      return Promise.reject(error);
-    }
-    originalRequest._retryCount = originalRequest._retryCount || 0;
-    if (error.response?.status === 403 && originalRequest._retryCount < 4) {
+      originalRequest._retryCount = originalRequest._retryCount || 0;
+      if (originalRequest._retryCount < 4) {
         originalRequest._retryCount += 1;
-      try {
-        const res = await api.post(
-          "/auth/refresh-token",
-          {},
-          { withCredentials: true }
-        );
-        const newAccessToken = res.data.accessToken;
-        useAuthStore.getState().setAccessToken(newAccessToken);
-        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-        return api(originalRequest);
-      } catch (error) {
-        console.log("lỗi khi làm mới token:", error);
+        try {
+          const res = await api.post(
+            "/auth/refresh-token",
+            {},
+            { withCredentials: true }
+          );
+          const newAccessToken = res.data.accessToken;
+          useAuthStore.getState().setAccessToken(newAccessToken);
+          originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+          return api({ ...originalRequest }, { withCredentials: true });
+        } catch (error) {
+          console.log("Lỗi khi refresh Token", error);
+          //Nếu hết hạn phiên -> xóa token và user khỏi store
+          useAuthStore.getState().clearState();
+        }
+      } else {
+        //Nếu hết hạn phiên -> xóa token và user khỏi store
         useAuthStore.getState().clearState();
-        return Promise.reject(error);
       }
     }
     return Promise.reject(error);
