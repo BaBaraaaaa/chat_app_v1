@@ -7,6 +7,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   user: null,
   loading: false,
+  darkMode: localStorage.getItem("darkMode") === "true",
   hasLoggedOut:
     typeof window !== "undefined"
       ? localStorage.getItem("hasLoggedOut") === "true"
@@ -100,5 +101,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       set({ loading: false });
     }
+  },
+  toggleDarkMode: () => {
+    const { darkMode } = get();
+    set({ darkMode: !darkMode });
   },
 }));

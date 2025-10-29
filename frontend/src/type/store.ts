@@ -6,7 +6,7 @@ export interface AuthState {
   user: User | null;
   loading: boolean;
   hasLoggedOut: boolean;
-
+  darkMode: boolean;
   setAccessToken: (accessToken: string | null) => void;
   signUp: (
     username: string,
@@ -20,4 +20,5 @@ export interface AuthState {
     clearState: () => void;
     fetchMe: () => Promise<void>;
     refresh: () => Promise<string | null>;
+    toggleDarkMode: () => void;
 }

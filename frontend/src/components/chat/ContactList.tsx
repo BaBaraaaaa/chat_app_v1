@@ -14,49 +14,57 @@ const ContactList = ({
   onContactSelect,
 }: ContactListProps) => {
   return (
-    <div className="space-y-1 p-2">
-      {contacts.map((contact) => (
-        <div
-          key={contact.id}
-          onClick={() => onContactSelect(contact)}
-          className={`p-3 hover:bg-muted/50 cursor-pointer rounded-lg transition-colors ${
-            selectedContact?.id === contact.id ? "bg-muted" : ""
-          }`}
-        >
-          <div className="flex items-center gap-3">
+    <div className="flex flex-col space-y-2 py-2">
+      {contacts.map((contact) => {
+        const isActive = selectedContact?.id === contact.id;
+        return (
+          <div
+            key={contact.id}
+            onClick={() => onContactSelect(contact)}
+            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all
+              ${isActive ? "bg-accent/60 shadow-sm" : "hover:bg-accent/30"}
+            `}
+          >
+            {/* Avatar */}
             <div className="relative">
-              <Avatar className="w-12 h-12">
-                <AvatarFallback className="bg-primary/10 text-primary">
+              <Avatar className="w-11 h-11 shadow-sm">
+                <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
                   {contact.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               {contact.isOnline && (
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background bg-green-500 shadow-sm"></div>
               )}
             </div>
+
+            {/* Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium text-sm truncate">
+              <div className="flex items-center justify-between mb-0.5">
+                <h3 className="font-medium text-sm truncate text-foreground">
                   {contact.name}
                 </h3>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground whitespace-nowrap">
                   {contact.timestamp}
                 </span>
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-sm text-muted-foreground truncate">
+
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground truncate max-w-[140px]">
                   {contact.lastMessage}
                 </p>
-                {contact.unreadCount && (
-                  <Badge variant="default" className="h-5 text-xs">
+                {contact.unreadCount ? (
+                  <Badge
+                    variant="default"
+                    className="h-5 min-w-[20px] text-[11px] px-2 flex items-center justify-center rounded-full"
+                  >
                     {contact.unreadCount}
                   </Badge>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
