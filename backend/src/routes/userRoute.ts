@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMe } from "../controllers/userController";
+import { getMe, searchUsers } from "../controllers/userController";
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -8,5 +8,6 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/me", getMe);
+router.get("/search", searchUsers);
 
 export default router;
