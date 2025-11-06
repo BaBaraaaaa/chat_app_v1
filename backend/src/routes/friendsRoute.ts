@@ -5,7 +5,8 @@ import {
     declineFriendRequest, 
     getFriendRequests, 
     cancelFriendRequest,
-    getSentFriendRequests 
+    getSentFriendRequests, 
+    getFriendsList
 } from '../controllers/friendsController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
@@ -14,8 +15,13 @@ const router = Router();
 // Tất cả routes đều cần authentication
 router.use(authMiddleware);
 
+//lấy danh sách bạn bè
+router.get('/list', getFriendsList);
 // Gửi lời mời kết bạn
 router.post('/send', sendFriendRequest);
+
+// Gửi lời mời kết bạn bằng username  
+router.post('/send-by-username', sendFriendRequest);
 
 // Chấp nhận lời mời kết bạn (dùng requestId trong params)
 router.patch('/accept/:requestId', acceptFriendRequest);

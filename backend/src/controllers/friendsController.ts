@@ -3,46 +3,109 @@ import { AuthRequest } from "../middleware/authMiddleware";
 import User from "../models/User";
 import FriendRequest, { FriendRequestStatus } from "../models/Friends";
 
+
+
+//lấy danh sách bạn bè
+export const getFriendsList = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    const user = await User.findById(userId).populate("friends", "username displayName firstName lastName email avatarUrl");
+    
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại" });
+    }
+
+    res.json({ 
+      message: "Danh sách bạn bè", 
+      data: { 
+        friends: user.friends || []
+      }
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách bạn bè:", error);
+    res.status(500).json({ message: "Lỗi khi lấy danh sách bạn bè", error });
+  }
+};
 // Xử lý gửi lời mời kết bạn
 export const sendFriendRequest = async (req: AuthRequest, res: Response) => {
   try {
     const fromUserId = req.user?._id;
-    const { toUserId, message } = req.body;
-    // Kiểm tra người gửi và người nhận
+    const { toUserId, toUsername, message } = req.body;
+    
+    // Kiểm tra người gửi
     if (!fromUserId) {
       return res.status(401).json({ message: "Người dùng chưa đăng nhập." });
     }
-    if (!toUserId) {
-      return res.status(400).json({ message: "Người nhận không hợp lệ." });
+
+    // Xác định người nhận - ưu tiên toUserId, nếu không có thì dùng toUsername
+    let targetUser;
+    if (toUserId) {
+      targetUser = await User.findById(toUserId);
+    } else if (toUsername) {
+      targetUser = await User.findOne({ username: toUsername });
+    } else {
+      return res.status(400).json({ message: "Vui lòng cung cấp userId hoặc username của người nhận." });
     }
-    if (fromUserId.toString() === toUserId) {
-      return res
-        .status(400)
-        .json({ message: "Không thể gửi lời mời cho chính mình" });
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
     }
-    // Đã là bạn chưa?
+
+    const toUserIdFinal = targetUser._id;
+
+    // Kiểm tra không gửi cho chính mình
+    if (fromUserId.toString() === toUserIdFinal.toString()) {
+      return res.status(400).json({ message: "Không thể gửi lời mời cho chính mình" });
+    }
+
+    // Kiểm tra đã là bạn chưa
     const sender = await User.findById(fromUserId);
-    if (sender?.friends?.includes(toUserId)) {
+    if (sender?.friends?.includes(toUserIdFinal)) {
       return res.status(400).json({ message: "Hai người đã là bạn bè" });
     }
+
     // Kiểm tra đã gửi lời mời chưa
     const existingRequest = await FriendRequest.findOne({
       fromUserId,
-      toUserId,
+      toUserId: toUserIdFinal,
+      status: { $in: [FriendRequestStatus.PENDING] }
     });
-    if (existingRequest && existingRequest.status === FriendRequestStatus.PENDING) {
-      return res.status(400).json({ message: "Đã gửi lời mời kết bạn." });
+
+    if (existingRequest) {
+      return res.status(400).json({ message: "Đã gửi lời mời kết bạn cho người này." });
+    }
+
+    // Kiểm tra có lời mời ngược lại không (người kia đã gửi cho mình)
+    const reverseRequest = await FriendRequest.findOne({
+      fromUserId: toUserIdFinal,
+      toUserId: fromUserId,
+      status: FriendRequestStatus.PENDING
+    });
+
+    if (reverseRequest) {
+      return res.status(400).json({ 
+        message: "Người này đã gửi lời mời kết bạn cho bạn. Vui lòng kiểm tra lời mời đã nhận.",
+        hasReverseRequest: true 
+      });
     }
 
     // Gửi lời mời kết bạn
     const newRequest = await FriendRequest.create({
       fromUserId,
-      toUserId,
+      toUserId: toUserIdFinal,
       status: FriendRequestStatus.PENDING,
       message: message || "",
     });
-    res.status(201).json({ message: "Đã gửi lời mời", data: newRequest });
-    // ...
+
+    // Populate thông tin người gửi để trả về
+    const populatedRequest = await FriendRequest.findById(newRequest._id)
+      .populate('fromUserId', 'firstName lastName displayName username avatar')
+      .populate('toUserId', 'firstName lastName displayName username avatar');
+
+    res.status(201).json({ 
+      message: `Đã gửi lời mời kết bạn tới ${targetUser.displayName || targetUser.username}`, 
+      data: populatedRequest 
+    });
   } catch (error) {
     console.error("Lỗi Gửi lời mời kết bạn:", error);
     res.status(500).json({ message: "Lỗi Gửi lời mời kết bạn", error });

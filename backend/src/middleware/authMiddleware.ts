@@ -3,7 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import User, { IUser } from "../models/User";
 
 export interface AuthRequest extends Request {
-   user?: Omit<IUser, "hashedPassword">; // loại bỏ field nhạy cảm
+  user?: Omit<IUser, "hashedPassword">; // loại bỏ field nhạy cảm
 }
 
 export const authMiddleware = async (
@@ -38,6 +38,15 @@ export const authMiddleware = async (
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
+    if (error instanceof jwt.TokenExpiredError) {
+      return res
+        .status(401)
+        .json({ message: "Token đã hết hạn, vui lòng đăng nhập lại." });
+    }
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ message: "Token không hợp lệ." });
+    }
+
     return res.status(500).json({ message: "Lỗi server nội bộ." });
   }
 };
