@@ -9,7 +9,7 @@ export interface IUser extends Document {
   avatarUrl?: string | null;
   avatarId?: string | null;
   phone?: string | null;
-  friends?: string[]; // Danh sách bạn bè
+  friends?: mongoose.Types.ObjectId[]; // Danh sách bạn bè
 }
 const userSchema = new mongoose.Schema(
   {
