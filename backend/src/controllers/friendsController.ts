@@ -196,3 +196,31 @@ export const getSentFriendRequests = async (req: AuthRequest, res: Response) => 
     res.status(500).json({ message: "Lỗi lấy danh sách lời mời đã gửi", error });
   }
 };
+
+// Xử lý xóa bạn bè
+export const removeFriend = async (req: AuthRequest, res: Response) => {
+  try {
+    const { friendId } = req.params;
+    const userId = req.user?._id;
+    
+    if (!userId || !friendId) {
+      return res.status(401).json({ message: "Người dùng chưa đăng nhập hoặc thiếu friendId." });
+    }
+
+    const result = await FriendService.removeFriend(userId.toString(), friendId);
+
+    if (result.success) {
+      res.json({ 
+        message: result.message, 
+        data: result.data 
+      });
+    } else {
+      const statusCode = result.message.includes("không tồn tại") ? 404 :
+                        result.message.includes("không phải bạn bè") ? 400 : 500;
+      res.status(statusCode).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error("Lỗi xóa bạn bè:", error);
+    res.status(500).json({ message: "Lỗi xóa bạn bè", error });
+  }
+};

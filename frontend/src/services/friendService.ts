@@ -73,6 +73,15 @@ export const friendService = {
     return res.data;
   },
 
+  // Xóa bạn bè
+  removeFriend: async (friendId: string) => {
+    const res = await api.delete(
+      `/friends/remove/${friendId}`,
+      { withCredentials: true }
+    );
+    return res.data;
+  },
+
   // Tìm kiếm người dùng
   searchUsers: async (query: string) => {
     const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`, { 

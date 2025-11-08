@@ -330,4 +330,71 @@ export class FriendService {
       };
     }
   }
+
+  // Xóa bạn bè
+  static async removeFriend(userId: string | Types.ObjectId, friendId: string | Types.ObjectId): Promise<FriendRequestResponse> {
+    try {
+      // Kiểm tra người dùng hiện tại
+      const currentUser = await User.findById(userId);
+      if (!currentUser) {
+        return {
+          success: false,
+          message: "Người dùng không tồn tại"
+        };
+      }
+
+      // Kiểm tra bạn bè cần xóa
+      const friendUser = await User.findById(friendId);
+      if (!friendUser) {
+        return {
+          success: false,
+          message: "Bạn bè không tồn tại"
+        };
+      }
+
+      // Kiểm tra xem hai người có phải bạn bè không
+      const isFriend = currentUser.friends?.some(friend => friend.toString() === friendId.toString());
+      if (!isFriend) {
+        return {
+          success: false,
+          message: "Hai người không phải bạn bè"
+        };
+      }
+
+      // Xóa khỏi danh sách bạn bè của người dùng hiện tại
+      await User.findByIdAndUpdate(
+        userId,
+        { $pull: { friends: friendId } },
+        { new: true }
+      );
+
+      // Xóa khỏi danh sách bạn bè của người kia
+      await User.findByIdAndUpdate(
+        friendId,
+        { $pull: { friends: userId } },
+        { new: true }
+      );
+
+      return {
+        success: true,
+        message: `Đã xóa ${friendUser.displayName} khỏi danh sách bạn bè`,
+        data: {
+          removedFriend: {
+            _id: friendUser._id,
+            username: friendUser.username,
+            displayName: friendUser.displayName,
+            email: friendUser.email
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error("Lỗi khi xóa bạn bè:", error);
+      return {
+        success: false,
+        message: "Lỗi khi xóa bạn bè",
+        error
+      };
+    }
+  }
 }
