@@ -25,6 +25,7 @@ export const useSocket = () => {
   const { setupSocketListeners, removeSocketListeners } = useFriendStore();
   const hasConnectedRef = useRef(false);
   const listenersSetupRef = useRef(false);
+  const userRegisteredRef = useRef(false);
 
   // Auto connect/disconnect dựa trên auth state
   useEffect(() => {
@@ -38,7 +39,12 @@ export const useSocket = () => {
         .then((success) => {
           if (success) {
             hasConnectedRef.current = true;
-            registerUser(user._id);
+            
+            // Register user chỉ 1 lần
+            if (!userRegisteredRef.current) {
+              registerUser(user._id);
+              userRegisteredRef.current = true;
+            }
             
             // Setup friend-related socket listeners chỉ một lần
             if (!listenersSetupRef.current) {
@@ -61,6 +67,7 @@ export const useSocket = () => {
       disconnect();
       hasConnectedRef.current = false;
       listenersSetupRef.current = false; // Reset listeners flag
+      userRegisteredRef.current = false; // Reset registration flag
     }
 
     // Cleanup on unmount
@@ -70,6 +77,7 @@ export const useSocket = () => {
         disconnect();
         hasConnectedRef.current = false;
         listenersSetupRef.current = false; // Reset listeners flag
+        userRegisteredRef.current = false; // Reset registration flag
       }
     };
   }, [user, accessToken, connect, disconnect, registerUser, setupSocketListeners, removeSocketListeners]);
@@ -84,7 +92,11 @@ export const useSocket = () => {
         connect(accessToken)
           .then((success) => {
             if (success) {
-              registerUser(user._id);
+              // Chỉ register nếu chưa register
+              if (!userRegisteredRef.current) {
+                registerUser(user._id);
+                userRegisteredRef.current = true;
+              }
               // Không setup listeners lại vì đã setup rồi
               console.log('✅ Socket reconnected successfully');
             }

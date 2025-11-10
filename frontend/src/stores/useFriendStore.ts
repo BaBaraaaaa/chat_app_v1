@@ -343,29 +343,31 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         });
 
         // Lắng nghe phản hồi friend request (accept/decline)
+        // ⚠️ Event này dành cho NGƯỜI GỬI lời mời, không phải người xử lý
         socketService.onFriendRequestResponse((data) => {
-            console.log('💬 Nhận phản hồi lời mời kết bạn:', data);
+            console.log('💬 Nhận phản hồi lời mời kết bạn (sender):', data);
             // Refresh cả friends và requests
             get().getFriendsList();
             get().getFriendRequests();
             get().getSentRequests();
             
-            // Hiển thị thông báo
+            // Hiển thị thông báo cho NGƯỜI GỬI
             if (data.response === 'accepted') {
-                toast.success('Lời mời kết bạn đã được chấp nhận!');
+                toast.success('Lời mời kết bạn của bạn đã được chấp nhận!');
             } else {
-                toast.info('Lời mời kết bạn đã bị từ chối');
+                toast.info('Lời mời kết bạn của bạn đã bị từ chối');
             }
         });
 
         // Lắng nghe khi chính mình xử lý friend request (accept/decline)
+        // ✅ Event này dành cho NGƯỜI XỬ LÝ (responder)
         socketService.onFriendRequestProcessed((data) => {
-            console.log('✅ Đã xử lý lời mời kết bạn:', data);
+            console.log('✅ Đã xử lý lời mời kết bạn (responder):', data);
             // Refresh cả friends và requests ngay lập tức
             get().getFriendsList();
             get().getFriendRequests();
             
-            // Hiển thị thông báo
+            // Hiển thị thông báo cho NGƯỜI XỬ LÝ
             toast.success(data.message);
         });
 

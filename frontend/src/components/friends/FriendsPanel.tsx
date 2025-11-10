@@ -11,36 +11,42 @@ const FriendsPanel = () => {
   const { setupSocketListeners, removeSocketListeners, getFriendRequests, getSentRequests, getFriendsList } = useFriendStore();
 
   useEffect(() => {
-    // Fetch initial data khi component mount
+    // Fetch initial data chỉ 1 lần khi component mount
     const initializeData = async () => {
       if (user) {
+        console.log('🔄 Fetching initial friends data...');
         await Promise.all([
           getFriendRequests(),
           getSentRequests(),
           getFriendsList()
         ]);
+        console.log('✅ Initial friends data loaded');
       }
     };
 
     initializeData();
 
-    // Setup Socket listeners nếu đã kết nối
-    if (user && isConnected) {
-      setupSocketListeners();
-    }
-
     // Cleanup khi component unmount
     return () => {
       removeSocketListeners();
     };
-  }, [user, isConnected, setupSocketListeners, removeSocketListeners, getFriendRequests, getSentRequests, getFriendsList]);
+    // Chỉ chạy khi component mount, không phụ thuộc vào isConnected
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ⚠️ Empty dependency array - chỉ chạy 1 lần
 
-  // Re-setup listeners khi Socket connection thay đổi
+  // Setup Socket listeners riêng biệt
   useEffect(() => {
     if (isConnected && user) {
+      console.log('🔧 Setting up friend socket listeners...');
       setupSocketListeners();
     }
-  }, [isConnected, user, setupSocketListeners]);
+
+    return () => {
+      if (isConnected) {
+        removeSocketListeners();
+      }
+    };
+  }, [isConnected, user, setupSocketListeners, removeSocketListeners]);
 
   if (!user) {
     return (

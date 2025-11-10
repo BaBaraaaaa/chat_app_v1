@@ -25,17 +25,15 @@ export const registerFriendRequestHandler = (
     }) => {
       const { toUserId, toUsername, message } = data;
       
-      // Lấy fromUserId từ socket context thay vì từ data
-      const currentUser = onlineUsers.find(u => u.socketId === socket.id);
-      if (!currentUser) {
+      // ✅ Lấy userId trực tiếp từ socket.data
+      const fromUserId = socket.data.userId;
+      if (!fromUserId) {
         socket.emit("FRIEND_REQUEST_ERROR", { 
           success: false,
           message: "Người dùng chưa được xác thực." 
         });
         return;
       }
-      
-      const fromUserId = currentUser.userId;
       
       try {
         // Sử dụng FriendService để gửi lời mời
@@ -92,17 +90,15 @@ export const registerFriendRequestHandler = (
       try {
         const { requestId, response } = data;
 
-        // Lấy userId từ socket context
-        const currentUser = onlineUsers.find(u => u.socketId === socket.id);
-        if (!currentUser) {
+        // ✅ Lấy userId trực tiếp từ socket.data
+        const userId = socket.data.userId;
+        if (!userId) {
           socket.emit("RESPOND_FRIEND_REQUEST_ERROR", {
             success: false,
             message: "Người dùng chưa được xác thực."
           });
           return;
         }
-        
-        const userId = currentUser.userId;
 
         let result;
         if (response === "accepted") {
@@ -176,17 +172,15 @@ export const registerFriendRequestHandler = (
       try {
         const { requestId } = data;
 
-        // Lấy userId từ socket context
-        const currentUser = onlineUsers.find(u => u.socketId === socket.id);
-        if (!currentUser) {
+        // ✅ Lấy userId trực tiếp từ socket.data
+        const userId = socket.data.userId;
+        if (!userId) {
           socket.emit("CANCEL_FRIEND_REQUEST_ERROR", {
             success: false,
             message: "Người dùng chưa được xác thực."
           });
           return;
         }
-        
-        const userId = currentUser.userId;
 
         const result = await FriendService.cancelFriendRequest(requestId, userId);
 
@@ -235,9 +229,9 @@ export const registerFriendRequestHandler = (
     "GET_FRIEND_REQUESTS", 
     async () => {
       try {
-        // Lấy userId từ socket context
-        const currentUser = onlineUsers.find(u => u.socketId === socket.id);
-        if (!currentUser) {
+        // ✅ Lấy userId trực tiếp từ socket.data
+        const userId = socket.data.userId;
+        if (!userId) {
           socket.emit("FRIEND_REQUESTS_LIST", {
             success: false,
             message: "Người dùng chưa được xác thực."
@@ -245,7 +239,6 @@ export const registerFriendRequestHandler = (
           return;
         }
         
-        const userId = currentUser.userId;
         const result = await FriendService.getFriendRequests(userId);
 
         socket.emit("FRIEND_REQUESTS_LIST", {
@@ -269,9 +262,9 @@ export const registerFriendRequestHandler = (
     "GET_FRIENDS_LIST", 
     async () => {
       try {
-        // Lấy userId từ socket context
-        const currentUser = onlineUsers.find(u => u.socketId === socket.id);
-        if (!currentUser) {
+        // ✅ Lấy userId trực tiếp từ socket.data
+        const userId = socket.data.userId;
+        if (!userId) {
           socket.emit("FRIENDS_LIST", {
             success: false,
             message: "Người dùng chưa được xác thực."
@@ -279,7 +272,6 @@ export const registerFriendRequestHandler = (
           return;
         }
         
-        const userId = currentUser.userId;
         const result = await FriendService.getFriendsList(userId);
 
         socket.emit("FRIENDS_LIST", {
@@ -298,24 +290,22 @@ export const registerFriendRequestHandler = (
     }
   );
 
-  // �️ Xử lý xóa bạn bè
+  // 🗑️ Xử lý xóa bạn bè
   socket.on(
     "REMOVE_FRIEND",
     async (data: { friendId: string }) => {
       try {
         const { friendId } = data;
 
-        // Lấy userId từ socket context
-        const currentUser = onlineUsers.find(u => u.socketId === socket.id);
-        if (!currentUser) {
+        // ✅ Lấy userId trực tiếp từ socket.data
+        const userId = socket.data.userId;
+        if (!userId) {
           socket.emit("REMOVE_FRIEND_ERROR", {
             success: false,
             message: "Người dùng chưa được xác thực."
           });
           return;
         }
-        
-        const userId = currentUser.userId;
 
         const result = await FriendService.removeFriend(userId, friendId);
 

@@ -20,6 +20,9 @@ interface SocketState {
   notifications: Notification[];
   unreadCount: number;
   
+  // Internal flag to prevent duplicate listener setup
+  _coreListenersSetup: boolean;
+  
   // Actions
   connect: (token?: string) => Promise<boolean>;
   disconnect: () => void;
@@ -61,6 +64,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   onlineCount: 0,
   notifications: [],
   unreadCount: 0,
+  _coreListenersSetup: false,
 
   // === CONNECTION ACTIONS ===
   connect: async (token?: string): Promise<boolean> => {
@@ -109,6 +113,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
   // === EVENT LISTENERS SETUP ===
   setupEventListeners: () => {
+    const state = get();
+    
+    // Prevent duplicate setup
+    if (state._coreListenersSetup) {
+      console.log('⚠️ Core listeners already setup, skipping...');
+      return;
+    }
+
     console.log('🔧 Setting up core Socket connection listeners...');
 
     // === CORE CONNECTION LISTENERS ONLY ===
@@ -118,6 +130,9 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       console.log('👥 Online users updated:', data);
       get().updateOnlineUsers(data.data, data.count);
     });
+    
+    // Mark as setup
+    set({ _coreListenersSetup: true });
     
     // Request initial online users list
     socketService.getOnlineUsers();
@@ -129,6 +144,8 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     console.log('🧹 Removing core Socket listeners...');
     // Only remove specific listeners, not all
     socketService.removeListener('ONLINE_USERS_LIST');
+    // Reset flag so listeners can be re-setup on reconnect
+    set({ _coreListenersSetup: false });
     console.log('✅ Core Socket listeners removed');
   },
 

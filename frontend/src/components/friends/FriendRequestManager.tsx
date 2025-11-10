@@ -44,39 +44,42 @@ export const FriendRequestManager: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
 
-  // Setup Socket listeners và fetch initial data
+  // Fetch initial data chỉ 1 lần khi component mount
   useEffect(() => {
     const initializeData = async () => {
-      // Fetch initial data
-      await Promise.all([
-        fetchFriendRequests(),
-        fetchSentRequests(),
-        fetchFriends()
-      ]);
-
-      // Setup Socket listeners nếu đã kết nối
-      if (isConnected) {
-        setupSocketListeners();
+      if (user) {
+        console.log('🔄 FriendRequestManager: Fetching initial data...');
+        await Promise.all([
+          fetchFriendRequests(),
+          fetchSentRequests(),
+          fetchFriends()
+        ]);
+        console.log('✅ FriendRequestManager: Initial data loaded');
       }
     };
 
-    if (user) {
-      initializeData();
-    }
+    initializeData();
 
     // Cleanup listeners khi component unmount
     return () => {
       removeSocketListeners();
     };
-  }, [user, isConnected, fetchFriendRequests, fetchSentRequests, fetchFriends, setupSocketListeners, removeSocketListeners]);
+    // ⚠️ Chỉ chạy 1 lần khi mount - không bao gồm functions trong dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty array - chỉ fetch data 1 lần
 
-  // Re-setup listeners khi Socket connection thay đổi
+  // Setup Socket listeners riêng biệt
   useEffect(() => {
     if (isConnected && user) {
+      console.log('🔧 FriendRequestManager: Setting up socket listeners...');
       setupSocketListeners();
-    } else {
-      removeSocketListeners();
     }
+
+    return () => {
+      if (isConnected) {
+        removeSocketListeners();
+      }
+    };
   }, [isConnected, user, setupSocketListeners, removeSocketListeners]);
 
   // Gửi lời mời kết bạn
@@ -94,7 +97,7 @@ export const FriendRequestManager: React.FC = () => {
     setSendingRequest(true);
     try {
       await sendFriendRequest(newFriendEmail);
-      toast.success('Đã gửi lời mời kết bạn!');
+      // ✅ Socket listener sẽ tự động show toast
       setNewFriendEmail('');
       setIsAddDialogOpen(false);
     } catch (error) {
@@ -109,7 +112,7 @@ export const FriendRequestManager: React.FC = () => {
   const handleAcceptRequest = async (requestId: string) => {
     try {
       await acceptFriendRequest(requestId);
-      toast.success('Đã chấp nhận lời mời kết bạn!');
+      // ✅ Socket listener sẽ tự động show toast
     } catch (error) {
       console.error('Error accepting friend request:', error);
       toast.error('Không thể chấp nhận lời mời');
@@ -131,7 +134,7 @@ export const FriendRequestManager: React.FC = () => {
   const handleCancelRequest = async (requestId: string) => {
     try {
       await cancelFriendRequest(requestId);
-      toast.success('Đã hủy lời mời kết bạn');
+      // ✅ Socket listener sẽ tự động show toast
     } catch (error) {
       console.error('Error canceling friend request:', error);
       toast.error('Không thể hủy lời mời');
@@ -143,7 +146,7 @@ export const FriendRequestManager: React.FC = () => {
     if (window.confirm(`Bạn có chắc muốn xóa ${friendName} khỏi danh sách bạn bè?`)) {
       try {
         await removeFriend(friendId);
-        toast.success(`Đã xóa ${friendName} khỏi danh sách bạn bè`);
+        // ✅ Socket listener sẽ tự động show toast
       } catch (error) {
         console.error('Error removing friend:', error);
         toast.error('Không thể xóa bạn bè');
