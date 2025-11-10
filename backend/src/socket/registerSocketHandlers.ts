@@ -1,5 +1,4 @@
 import { Server, Socket } from "socket.io";
-import FriendRequest, { FriendRequestStatus } from "../models/Friends";
 import { registerFriendRequestHandler } from "./registerFriendRequestHandler";
 interface OnlineUser {
   userId: string;

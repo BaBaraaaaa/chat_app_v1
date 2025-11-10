@@ -25,7 +25,6 @@ export const useSocket = () => {
   const { setupSocketListeners, removeSocketListeners } = useFriendStore();
   const hasConnectedRef = useRef(false);
   const listenersSetupRef = useRef(false);
-  const userRegisteredRef = useRef(false);
 
   // Auto connect/disconnect dựa trên auth state
   useEffect(() => {
@@ -40,11 +39,8 @@ export const useSocket = () => {
           if (success) {
             hasConnectedRef.current = true;
             
-            // Register user chỉ 1 lần
-            if (!userRegisteredRef.current) {
-              registerUser(user._id);
-              userRegisteredRef.current = true;
-            }
+            // ✅ registerUser có flag check trong store rồi
+            registerUser(user._id);
             
             // Setup friend-related socket listeners chỉ một lần
             if (!listenersSetupRef.current) {
@@ -66,8 +62,7 @@ export const useSocket = () => {
       removeSocketListeners();
       disconnect();
       hasConnectedRef.current = false;
-      listenersSetupRef.current = false; // Reset listeners flag
-      userRegisteredRef.current = false; // Reset registration flag
+      listenersSetupRef.current = false;
     }
 
     // Cleanup on unmount
@@ -76,15 +71,21 @@ export const useSocket = () => {
         removeSocketListeners();
         disconnect();
         hasConnectedRef.current = false;
-        listenersSetupRef.current = false; // Reset listeners flag
-        userRegisteredRef.current = false; // Reset registration flag
+        listenersSetupRef.current = false;
       }
     };
   }, [user, accessToken, connect, disconnect, registerUser, setupSocketListeners, removeSocketListeners]);
 
   // Reconnection logic khi connection bị mất
   useEffect(() => {
-    if (!isConnected && user && accessToken && hasConnectedRef.current && !isConnecting) {
+    // ⚠️ CHỈ reconnect khi đã từng connected và BỊ MẤT kết nối (không phải lần đầu)
+    const shouldReconnect = !isConnected && 
+                           user && 
+                           accessToken && 
+                           hasConnectedRef.current && 
+                           !isConnecting;
+    
+    if (shouldReconnect) {
       console.log('🔄 Attempting to reconnect socket...');
       
       // Delay trước khi reconnect để tránh spam
@@ -92,13 +93,9 @@ export const useSocket = () => {
         connect(accessToken)
           .then((success) => {
             if (success) {
-              // Chỉ register nếu chưa register
-              if (!userRegisteredRef.current) {
-                registerUser(user._id);
-                userRegisteredRef.current = true;
-              }
-              // Không setup listeners lại vì đã setup rồi
-              console.log('✅ Socket reconnected successfully');
+              // ✅ Re-register sau khi reconnect (store có flag check rồi)
+              registerUser(user._id);
+              console.log('✅ Socket reconnected and user re-registered');
             }
           })
           .catch((error) => {
@@ -108,7 +105,7 @@ export const useSocket = () => {
 
       return () => clearTimeout(reconnectTimer);
     }
-  }, [isConnected, user, accessToken, isConnecting, connect, registerUser, setupSocketListeners]);
+  }, [isConnected, user, accessToken, isConnecting, connect, registerUser]);
 
   return {
     // Connection state

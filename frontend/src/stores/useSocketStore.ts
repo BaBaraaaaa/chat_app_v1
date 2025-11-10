@@ -23,6 +23,9 @@ interface SocketState {
   // Internal flag to prevent duplicate listener setup
   _coreListenersSetup: boolean;
   
+  // Internal flag to prevent duplicate user registration
+  _userRegistered: boolean;
+  
   // Actions
   connect: (token?: string) => Promise<boolean>;
   disconnect: () => void;
@@ -65,6 +68,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   _coreListenersSetup: false,
+  _userRegistered: false,
 
   // === CONNECTION ACTIONS ===
   connect: async (token?: string): Promise<boolean> => {
@@ -103,12 +107,22 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       isConnecting: false,
       connectionError: null,
       onlineUsers: [],
-      onlineCount: 0
+      onlineCount: 0,
+      _userRegistered: false // ✅ Reset registration flag
     });
   },
 
   registerUser: (userId: string) => {
+    const state = get();
+    
+    // ✅ Prevent duplicate registration
+    if (state._userRegistered) {
+      console.log('⚠️ User already registered in store, skipping...');
+      return;
+    }
+    
     socketService.registerUserOnline(userId);
+    set({ _userRegistered: true });
   },
 
   // === EVENT LISTENERS SETUP ===

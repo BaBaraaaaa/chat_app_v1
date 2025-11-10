@@ -350,13 +350,4 @@ export const registerFriendRequestHandler = (
       }
     }
   );
-
-  // �📊 Lấy thống kê online users (dev purpose)
-  socket.on("GET_ONLINE_USERS", () => {
-    socket.emit("ONLINE_USERS_LIST", {
-      success: true,
-      data: notificationService.getOnlineUsers(),
-      count: onlineUsers.length
-    });
-  });
 };
