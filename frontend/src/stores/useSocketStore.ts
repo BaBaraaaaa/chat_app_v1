@@ -118,6 +118,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       console.log('👥 Online users updated:', data);
       get().updateOnlineUsers(data.data, data.count);
     });
+    
+    // Request initial online users list
+    socketService.getOnlineUsers();
+    
     console.log('✅ Core Socket listeners setup complete');
   },
 
@@ -181,6 +185,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
   // === ONLINE USERS MANAGEMENT ===
   updateOnlineUsers: (users: string[], count: number) => {
+    console.log('👥 Updating online users:', { users, count, previousCount: get().onlineCount });
     set({ onlineUsers: users, onlineCount: count });
   }
 }));

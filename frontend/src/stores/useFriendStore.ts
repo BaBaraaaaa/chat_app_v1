@@ -323,18 +323,18 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // 🛡️ Tránh setup duplicate listeners
         if (get()._listenersSetup) {
-            console.log('⚠️ Socket listeners đã được setup, bỏ qua...');
+            console.log('⚠️ Các listener Socket đã được thiết lập trước đó, bỏ qua...');
             return;
         }
 
         // 🧹 Cleanup existing friend listeners trước khi setup mới để tránh duplicate
         get().removeSocketListeners();
 
-        console.log('🔧 Thiết lập các listener Socket liên quan đến bạn bè...');
+        console.log('🔧 Đang thiết lập các listener Socket liên quan đến bạn bè...');
 
         // Lắng nghe friend request mới
         socketService.onFriendRequestReceived((data) => {
-            console.log('Nhận friend request mới:', data);
+            console.log('📨 Nhận được lời mời kết bạn mới:', data);
             // Refresh danh sách friend requests
             get().getFriendRequests();
             
@@ -344,7 +344,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe phản hồi friend request (accept/decline)
         socketService.onFriendRequestResponse((data) => {
-            console.log('Friend request response:', data);
+            console.log('💬 Nhận phản hồi lời mời kết bạn:', data);
             // Refresh cả friends và requests
             get().getFriendsList();
             get().getFriendRequests();
@@ -360,7 +360,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe khi chính mình xử lý friend request (accept/decline)
         socketService.onFriendRequestProcessed((data) => {
-            console.log('Friend request processed by me:', data);
+            console.log('✅ Đã xử lý lời mời kết bạn:', data);
             // Refresh cả friends và requests ngay lập tức
             get().getFriendsList();
             get().getFriendRequests();
@@ -371,7 +371,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe khi friend request bị hủy
         socketService.onFriendRequestCancelled((data) => {
-            console.log('Friend request cancelled:', data);
+            console.log('🚫 Lời mời kết bạn đã bị hủy:', data);
             // Refresh danh sách requests
             get().getFriendRequests();
             
@@ -380,7 +380,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe friend request được gửi thành công
         socketService.onFriendRequestSent((data) => {
-            console.log('Friend request sent:', data);
+            console.log('📤 Đã gửi lời mời kết bạn:', data);
             if (data.success) {
                 // Refresh sent requests
                 get().getSentRequests();
@@ -392,13 +392,13 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe lỗi friend request
         socketService.onFriendRequestError((data) => {
-            console.log('Friend request error:', data);
+            console.log('❌ Lỗi khi xử lý lời mời kết bạn:', data);
             toast.error(data.message || 'Có lỗi xảy ra');
         });
 
         // Lắng nghe khi hủy friend request thành công
         socketService.onCancelFriendRequestSuccess((data) => {
-            console.log('Cancel friend request success:', data);
+            console.log('✅ Đã hủy lời mời kết bạn thành công:', data);
             if (data.success) {
                 // Refresh danh sách sent requests
                 get().getSentRequests();
@@ -408,7 +408,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe khi friend bị xóa
         socketService.onFriendRemoved((data) => {
-            console.log('Friend removed:', data);
+            console.log('🗑️ Bạn bè đã bị xóa:', data);
             // Refresh danh sách friends
             get().getFriendsList();
             
@@ -418,7 +418,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe khi xóa friend thành công
         socketService.onRemoveFriendSuccess((data) => {
-            console.log('Remove friend success:', data);
+            console.log('✅ Đã xóa bạn bè thành công:', data);
             if (data.success) {
                 // Refresh danh sách friends
                 get().getFriendsList();
@@ -428,20 +428,20 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe lỗi khi xóa friend
         socketService.onRemoveFriendError((data) => {
-            console.log('Remove friend error:', data);
+            console.log('❌ Lỗi khi xóa bạn bè:', data);
             toast.error(data.message || 'Không thể xóa bạn bè');
             // Refresh để đồng bộ lại UI
             get().getFriendsList();
         });
 
-        console.log('✅ Socket listeners đã được thiết lập');
+        console.log('✅ Đã thiết lập xong tất cả các listener Socket cho bạn bè');
         
         // 🏁 Đánh dấu listeners đã được setup
         set({ _listenersSetup: true });
     },
 
     removeSocketListeners: () => {
-        console.log('🧹 Cleaning up friend-related Socket listeners...');
+        console.log('🧹 Đang xóa các listener Socket liên quan đến bạn bè...');
         // Chỉ xóa friend-related listeners, không xóa core connection listeners
         socketService.removeListener('RECEIVE_FRIEND_REQUEST');
         socketService.removeListener('FRIEND_REQUEST_RESPONSE');
@@ -460,6 +460,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         
         // 🔄 Reset setup flag
         set({ _listenersSetup: false });
-        console.log('🔌 Friend Socket listeners đã được gỡ bỏ');
+        console.log('✅ Đã xóa xong các listener Socket liên quan đến bạn bè');
     }
 }));

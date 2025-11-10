@@ -12,8 +12,10 @@ const ChatAppPage = () => {
     switch (activeView) {
       case 'chat':
         return <ChatPanel />;
+      
       case 'friends':
         return <FriendsPanel />;
+
       case 'notifications':
         return <NotificationsPanel />;
       case 'settings':

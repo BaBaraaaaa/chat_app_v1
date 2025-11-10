@@ -21,14 +21,37 @@ export const registerSocketHandlers = (io: Server) => {
           "👥 Online users:",
           onlineUsers.map((u) => u.userId)
         );
+        
+        // Broadcast danh sách online users cho tất cả clients
+        io.emit("ONLINE_USERS_LIST", {
+          data: onlineUsers.map((u) => u.userId),
+          count: onlineUsers.length
+        });
+        
         //xử lý lời mời kết bạn đến
         registerFriendRequestHandler(io, socket, onlineUsers);
+
+        //xử lý GET_ONLINE_USERS request
+        socket.on("GET_ONLINE_USERS", () => {
+          socket.emit("ONLINE_USERS_LIST", {
+            data: onlineUsers.map((u) => u.userId),
+            count: onlineUsers.length
+          });
+        });
 
         //xử lý disconnect
         socket.on("disconnect", () => {
           console.log("🔴 User disconnected:", socket.id);
           const index = onlineUsers.findIndex((u) => u.socketId === socket.id);
-          if (index !== -1) onlineUsers.splice(index, 1);
+          if (index !== -1) {
+            onlineUsers.splice(index, 1);
+            
+            // Broadcast updated online users list sau khi user disconnect
+            io.emit("ONLINE_USERS_LIST", {
+              data: onlineUsers.map((u) => u.userId),
+              count: onlineUsers.length
+            });
+          }
         });
       } catch (error) {
         console.error("Lỗi kết nối:", error);
