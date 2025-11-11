@@ -11,6 +11,7 @@ interface MessageInputProps {
   onMessageInputChange: (value: string) => void;
   onSendMessage: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
+  disabled?: boolean; // ✅ Thêm prop disabled
 }
 
 const MessageInput = ({
@@ -18,6 +19,7 @@ const MessageInput = ({
   onMessageInputChange,
   onSendMessage,
   onKeyPress,
+  disabled = false, // ✅ Default false
 }: MessageInputProps) => {
   const { startTyping, stopTyping } = useMessageStore();
   const { currentConversation } = useConversationStore();
@@ -45,32 +47,34 @@ const MessageInput = ({
     // Stop typing after 2s không gõ
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping(currentConversation._id, receiver._id);
-    }, 2000);
+    }, 1000);
   }, [currentConversation, user, onMessageInputChange, startTyping, stopTyping]);
 
   return (
     <div className="p-4 border-t border-border bg-card">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" disabled={disabled}>
           <Paperclip className="w-4 h-4" />
         </Button>
         <div className="flex-1 relative">
           <Input
-            placeholder="Nhập tin nhắn..."
+            placeholder={disabled ? "Không thể gửi tin nhắn..." : "Nhập tin nhắn..."}
             value={messageInput}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyPress={onKeyPress}
             className="pr-10"
+            disabled={disabled} // ✅ Disable input
           />
           <Button
             variant="ghost"
             size="icon"
             className="absolute right-2 top-1/2 transform -translate-y-1/2"
+            disabled={disabled}
           >
             <Smile className="w-4 h-4" />
           </Button>
         </div>
-        <Button onClick={onSendMessage} size="icon">
+        <Button onClick={onSendMessage} size="icon" disabled={disabled}>
           <Send className="w-4 h-4" />
         </Button>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ChatSidebar from "./ChatSidebar";
 import ChatArea from "./ChatArea";
 import { NewChatDialog } from "./NewChatDialog";
@@ -6,6 +6,7 @@ import { useConversationStore } from "@/stores/useConversationStore";
 import { useMessageStore } from "@/stores/useMessageStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useSocketStore } from "@/stores/useSocketStore";
+import { useFriendStore } from "@/stores/useFriendStore";
 import { conversationService } from "@/services/conversationService";
 import type { Conversation } from "@/types/message";
 import type { Contact } from "../../types/chat";
@@ -18,6 +19,7 @@ const ChatPanel = () => {
 
   const { user } = useAuthStore();
   const { isConnected } = useSocketStore();
+  const { friends, getFriendsList, loading: friendsLoading } = useFriendStore(); // ✅ Thêm loading state
   
   // ✅ Tách từng selector riêng để tránh re-render không cần thiết
   const conversations = useConversationStore((state) => state.conversations);
@@ -35,16 +37,28 @@ const ChatPanel = () => {
     leaveConversation,
   } = useMessageStore();
 
-  // ✅ Load conversations khi connected (listeners đã setup ở useSocket)
+  // ✅ Load conversations và friends khi connected
   useEffect(() => {
     console.log("🔍 ChatPanel useEffect - isConnected:", isConnected, "user:", user?.username);
     
     if (isConnected && user) {
-      console.log("� ChatPanel: Loading conversations");
+      console.log("📋 ChatPanel: Loading conversations and friends");
       getConversations();
+      getFriendsList(); // ✅ Load friends list để check friendship
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, user]); // ✅ Chỉ depend vào isConnected và user
+
+  // ✅ Join TẤT CẢ conversation rooms khi có conversations
+  useEffect(() => {
+    if (conversations.length > 0 && isConnected) {
+      console.log("🔗 Joining ALL conversation rooms:", conversations.length);
+      conversations.forEach((conv) => {
+        joinConversation(conv._id);
+        console.log("✅ Joined room for conversation:", conv._id);
+      });
+    }
+  }, [conversations.length, isConnected, joinConversation]);
 
   // Load messages khi chọn conversation
   useEffect(() => {
@@ -56,12 +70,10 @@ const ChatPanel = () => {
       // ✅ Join conversation room để nhận real-time updates
       joinConversation(selectedConversation._id);
       
-      // ✅ Không setup listeners ở đây nữa, đã setup ở trên rồi
       getMessages(selectedConversation._id);
 
       // ✅ Reset unread count khi mở conversation
       if (selectedConversation.unreadCount && selectedConversation.unreadCount > 0) {
-        console.log("🔄 Resetting unread count for conversation:", selectedConversation._id);
         
         // ✅ Update local state ngay lập tức (optimistic update)
         _updateConversation(selectedConversation._id, { unreadCount: 0 });
@@ -74,12 +86,10 @@ const ChatPanel = () => {
 
       // ✅ Leave room khi unmount hoặc chuyển conversation
       return () => {
-        console.log("🚪 Leaving conversation:", selectedConversation._id);
         leaveConversation(selectedConversation._id);
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedConversation?._id, isConnected]); // ✅ Chỉ depend vào ID và connection state
+  }, [selectedConversation?._id, isConnected]);
 
   // Convert Conversation to Contact format cho UI
   const convertToContacts = (): Contact[] => {
@@ -177,6 +187,42 @@ const ChatPanel = () => {
 
   const uiMessages = convertToUIMessages();
 
+  // ✅ Check xem conversation partner có phải bạn bè không
+  const isFriend = useMemo(() => {
+    if (!selectedConversation || !user) {
+      console.log("🔍 isFriend check: No conversation or user, default true");
+      return true;
+    }
+    
+    // Tìm người còn lại trong conversation
+    const otherUser = selectedConversation.participants.find(p => p._id !== user._id);
+    if (!otherUser) {
+      console.log("🔍 isFriend check: No other user found, default true");
+      return true;
+    }
+    
+    // ⚠️ Nếu đang load friends → default true (chưa biết chắc)
+    if (friendsLoading) {
+      console.log("🔍 isFriend check: Friends loading, default true");
+      return true;
+    }
+    
+    console.log("🔍 isFriend check:", {
+      otherUserId: otherUser._id,
+      otherUserName: otherUser.displayName,
+      friendsCount: friends.length,
+      friendIds: friends.map(f => f._id),
+      friendsLoading
+    });
+    
+    // ✅ Nếu đã load xong friends → check trong list
+    // Nếu friends.length = 0 → user không có bạn nào → otherUser chắc chắn không phải bạn
+    // Nếu friends.length > 0 → check có trong list không
+    const result = friends.some(friend => friend._id === otherUser._id);
+    console.log("🔍 isFriend result:", result);
+    return result;
+  }, [selectedConversation, user, friends, friendsLoading]);
+
   const handleNewChat = () => {
     setNewChatOpen(true);
   };
@@ -213,6 +259,7 @@ const ChatPanel = () => {
           onMessageInputChange={setMessageInput}
           onSendMessage={handleSendMessage}
           onKeyPress={handleKeyPress}
+          isFriend={isFriend} // ✅ Pass friendship status
         />
       </div>
 

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ import {
   MessageCircle,
   UserPlus,
   Users,
+  AlertTriangle,
 } from "lucide-react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
@@ -28,6 +30,7 @@ interface ChatAreaProps {
   onMessageInputChange: (value: string) => void;
   onSendMessage: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
+  isFriend?: boolean; // ✅ Thêm prop check friendship
 }
 
 const ChatArea = ({
@@ -37,6 +40,7 @@ const ChatArea = ({
   onMessageInputChange,
   onSendMessage,
   onKeyPress,
+  isFriend = true, // ✅ Default true để không break existing code
 }: ChatAreaProps) => {
   if (!selectedContact) {
     return (
@@ -125,6 +129,18 @@ const ChatArea = ({
         </div>
       </div>
 
+      {/* ✅ Warning Banner nếu không phải bạn bè */}
+      {!isFriend && (
+        <Alert variant="destructive" className="m-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Người này không còn trong danh sách bạn bè của bạn.</strong>
+            <br />
+            Bạn không thể gửi tin nhắn mới. Thêm lại bạn bè để tiếp tục trò chuyện.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Messages */}
       <MessageList messages={messages} selectedContact={selectedContact} />
 
@@ -134,6 +150,7 @@ const ChatArea = ({
         onMessageInputChange={onMessageInputChange}
         onSendMessage={onSendMessage}
         onKeyPress={onKeyPress}
+        disabled={!isFriend} // ✅ Disable input nếu không phải bạn
       />
     </div>
   );

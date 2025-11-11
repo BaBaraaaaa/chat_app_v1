@@ -3,6 +3,7 @@ import { MessageController } from "../controllers/messageController";
 import { ConversationController } from "../controllers/conversationController";
 import { MessageType } from "../models/Message";
 import { Types } from "mongoose";
+import { FriendshipValidator } from "../utils/friendshipValidator";
 
 interface OnlineUser {
   userId: string;
@@ -42,6 +43,18 @@ export const registerMessageHandler = (
       }
 
       const { conversationId, receiverId, content, type, attachments, replyTo } = data;
+
+      // ✅ Validate: Chỉ cho phép nhắn tin giữa bạn bè
+      try {
+        await FriendshipValidator.validateFriendship(senderId, receiverId);
+      } catch (error: any) {
+        socket.emit("MESSAGE_ERROR", {
+          success: false,
+          message: error.message || "Bạn chỉ có thể nhắn tin với người trong danh sách bạn bè"
+        });
+        console.log(`❌ Friendship validation failed: ${senderId} -> ${receiverId}`);
+        return;
+      }
 
       // Gửi tin nhắn qua controller
       const result = await messageController.sendMessage({
