@@ -198,8 +198,8 @@ export class FriendService {
         };
       }
 
-      request.status = FriendRequestStatus.DECLINED;
-      await request.save();
+      // ✅ Xóa hoàn toàn khỏi database thay vì chỉ thay đổi status
+      await FriendRequest.findByIdAndDelete(requestId);
 
       return {
         success: true,
@@ -235,9 +235,8 @@ export class FriendService {
         };
       }
 
-      // Cập nhật status thành CANCELLED thay vì xóa
-      request.status = FriendRequestStatus.CANCELLED;
-      await request.save();
+      // ✅ Xóa hoàn toàn khỏi database thay vì chỉ thay đổi status
+      await FriendRequest.findByIdAndDelete(requestId);
 
       return {
         success: true,
@@ -282,9 +281,10 @@ export class FriendService {
   // Lấy danh sách lời mời đã gửi
   static async getSentFriendRequests(userId: string | Types.ObjectId): Promise<FriendRequestResponse> {
     try {
+      // ✅ Chỉ lấy PENDING vì declined/cancelled đã bị xóa
       const requests = await FriendRequest.find({ 
         fromUserId: userId, 
-        status: { $in: [FriendRequestStatus.PENDING, FriendRequestStatus.DECLINED] }
+        status: FriendRequestStatus.PENDING
       }).populate('toUserId', 'firstName lastName displayName avatar username');
       
       return {

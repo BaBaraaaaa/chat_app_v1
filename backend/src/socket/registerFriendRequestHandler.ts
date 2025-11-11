@@ -1,7 +1,5 @@
 import { Server, Socket } from "socket.io";
 import { FriendService } from "../services/friendService";
-import { NotificationService } from "../services/notificationService";
-import { FriendRequestNotification } from "../types/friendTypes";
 
 interface OnlineUser {
   userId: string;
@@ -13,8 +11,6 @@ export const registerFriendRequestHandler = (
   socket: Socket,
   onlineUsers: OnlineUser[]
 ) => {
-  // Khởi tạo notification service
-  const notificationService = new NotificationService(io, onlineUsers);
   // 📨 Gửi lời mời kết bạn
   socket.on(
     "SEND_FRIEND_REQUEST",

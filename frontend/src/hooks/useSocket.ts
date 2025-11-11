@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocketStore } from '@/stores/useSocketStore';
 import { useFriendStore } from '@/stores/useFriendStore';
+import { useConversationStore } from '@/stores/useConversationStore';
+import { useMessageStore } from '@/stores/useMessageStore';
 
 /**
  * Custom hook để quản lý Socket.IO connection
@@ -23,6 +25,9 @@ export const useSocket = () => {
   } = useSocketStore();
   
   const { setupSocketListeners, removeSocketListeners } = useFriendStore();
+  const { setupSocketListeners: setupConversationListeners, removeSocketListeners: removeConversationListeners } = useConversationStore();
+  const { setupSocketListeners: setupMessageListeners, removeSocketListeners: removeMessageListeners } = useMessageStore();
+  
   const hasConnectedRef = useRef(false);
   const listenersSetupRef = useRef(false);
 
@@ -42,9 +47,12 @@ export const useSocket = () => {
             // ✅ registerUser có flag check trong store rồi
             registerUser(user._id);
             
-            // Setup friend-related socket listeners chỉ một lần
+            // ✅ Setup TẤT CẢ socket listeners chỉ một lần
             if (!listenersSetupRef.current) {
-              setupSocketListeners();
+              console.log('🎧 Setting up ALL socket listeners (Friend, Conversation, Message)');
+              setupSocketListeners();         // Friend listeners
+              setupConversationListeners();   // Conversation listeners
+              setupMessageListeners();        // Message listeners
               listenersSetupRef.current = true;
             }
             
@@ -59,7 +67,10 @@ export const useSocket = () => {
     if (shouldDisconnect) {
       console.log('🔌 Disconnecting socket for user logout');
       
+      // ✅ Remove TẤT CẢ listeners
       removeSocketListeners();
+      removeConversationListeners();
+      removeMessageListeners();
       disconnect();
       hasConnectedRef.current = false;
       listenersSetupRef.current = false;
@@ -69,12 +80,14 @@ export const useSocket = () => {
     return () => {
       if (hasConnectedRef.current) {
         removeSocketListeners();
+        removeConversationListeners();
+        removeMessageListeners();
         disconnect();
         hasConnectedRef.current = false;
         listenersSetupRef.current = false;
       }
     };
-  }, [user, accessToken, connect, disconnect, registerUser, setupSocketListeners, removeSocketListeners]);
+  }, [user, accessToken, connect, disconnect, registerUser, setupSocketListeners, removeSocketListeners, setupConversationListeners, removeConversationListeners, setupMessageListeners, removeMessageListeners]);
 
   // Reconnection logic khi connection bị mất
   useEffect(() => {

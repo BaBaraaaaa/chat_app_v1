@@ -4,9 +4,14 @@ import ChatPanel from "@/components/chat/ChatPanel";
 import FriendsPanel from "@/components/friends/FriendsPanel";
 import NotificationsPanel from "@/components/notifications/NotificationsPanel";
 import SettingsPanel from "@/components/settings/SettingsPanel";
+import { useSocket } from "@/hooks/useSocket";
+// import { SocketDebugPanel } from "@/components/debug/SocketDebugPanel";
 
 const ChatAppPage = () => {
   const [activeView, setActiveView] = useState<'chat' | 'friends' | 'settings' | 'notifications'>('chat');
+  
+  // Initialize Socket connection
+  useSocket();
 
   const renderMainContent = () => {
     switch (activeView) {
@@ -26,13 +31,18 @@ const ChatAppPage = () => {
   };
 
   return (
-    <Layout
-      activeView={activeView}
-      onViewChange={setActiveView}
-      notificationCount={5}
-    >
-      {renderMainContent()}
-    </Layout>
+    <>
+      <Layout
+        activeView={activeView}
+        onViewChange={setActiveView}
+        notificationCount={5}
+      >
+        {renderMainContent()}
+      </Layout>
+      
+      {/* Socket Debug Panel - Remove in production */}
+      {/* <SocketDebugPanel /> */}
+    </>
   );
 };
 

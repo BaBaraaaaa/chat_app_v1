@@ -1,6 +1,5 @@
 import React from 'react';
 import { Bell, Wifi, WifiOff, Loader2 } from 'lucide-react';
-import { useSocket } from '@/hooks/useSocket';
 import { useSocketStore } from '@/stores/useSocketStore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,10 +28,11 @@ export const SocketStatus: React.FC<SocketStatusProps> = ({
     connectionError,
     onlineCount,
     notifications,
-    unreadCount 
-  } = useSocket();
-  
-  const { markAsRead, removeNotification, clearNotifications } = useSocketStore();
+    unreadCount,
+    markAsRead,
+    removeNotification,
+    clearNotifications
+  } = useSocketStore();
 
   // Connection status icon và color
   const getConnectionIcon = () => {

@@ -5,13 +5,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { useFriendStore } from '@/stores/useFriendStore';
-import { useSocket } from '@/hooks/useSocket';
+import { useSocketStore } from '@/stores/useSocketStore';
 import { cn } from '@/lib/utils';
 
 const FriendsSidebar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { friends, receivedRequests, sentRequests } = useFriendStore();
-  const { isUserOnline } = useSocket();
+  const { onlineUsers } = useSocketStore();
+  const isUserOnline = (userId: string) => onlineUsers.includes(userId);
 
   // Filter friends dựa trên search query
   const filteredFriends = friends.filter(friend => 

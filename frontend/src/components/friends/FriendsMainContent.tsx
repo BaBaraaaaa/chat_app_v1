@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { UserPlus, Check, X, Clock, User, Trash2, RefreshCw, Users } from 'lucide-react';
 import { useFriendStore } from '@/stores/useFriendStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { useSocket } from '@/hooks/useSocket';
+import { useSocketStore } from '@/stores/useSocketStore';
 import SocketStatus from '@/components/socket/SocketStatus';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +23,9 @@ import { toast } from 'sonner';
 
 const FriendsMainContent = () => {
   const { user } = useAuthStore();
-  const { isUserOnline } = useSocket();
+  const { onlineUsers } = useSocketStore();
+  const isUserOnline = (userId: string) => onlineUsers.includes(userId);
+  
   const {
     receivedRequests,
     sentRequests,

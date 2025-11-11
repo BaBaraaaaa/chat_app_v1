@@ -11,6 +11,7 @@ import userRoute from './routes/userRoute';
 import cors from 'cors';
 import friendRequestRoute from './routes/friendsRoute';
 import { registerSocketHandlers } from './socket/registerSocketHandlers';
+import { socketAuthMiddleware } from './middleware/socketAuthMiddleware';
 
 // Cấu hình dotenv để sử dụng biến môi trường từ file .env
 dotenv.config();
@@ -29,6 +30,9 @@ const io = new Server(server, {
   transports: ['websocket', 'polling'],
   allowEIO3: true
 });
+
+// ✅ Apply Socket.IO authentication middleware
+io.use(socketAuthMiddleware);
 
 const PORT = process.env.PORT || 5000;
 

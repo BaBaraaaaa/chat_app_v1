@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Smile, Send } from "lucide-react";
+import { useCallback, useRef } from "react";
+import { useMessageStore } from "@/stores/useMessageStore";
+import { useConversationStore } from "@/stores/useConversationStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 interface MessageInputProps {
   messageInput: string;
@@ -15,6 +19,35 @@ const MessageInput = ({
   onSendMessage,
   onKeyPress,
 }: MessageInputProps) => {
+  const { startTyping, stopTyping } = useMessageStore();
+  const { currentConversation } = useConversationStore();
+  const { user } = useAuthStore();
+  const typingTimeoutRef = useRef<number | null>(null);
+
+  // Handle typing indicator
+  const handleInputChange = useCallback((value: string) => {
+    onMessageInputChange(value);
+
+    if (!currentConversation || !user) return;
+
+    // Tìm receiverId
+    const receiver = currentConversation.participants.find((p) => p._id !== user._id);
+    if (!receiver) return;
+
+    // Start typing
+    startTyping(currentConversation._id, receiver._id);
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing after 2s không gõ
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping(currentConversation._id, receiver._id);
+    }, 2000);
+  }, [currentConversation, user, onMessageInputChange, startTyping, stopTyping]);
+
   return (
     <div className="p-4 border-t border-border bg-card">
       <div className="flex items-center gap-2">
@@ -25,7 +58,7 @@ const MessageInput = ({
           <Input
             placeholder="Nhập tin nhắn..."
             value={messageInput}
-            onChange={(e) => onMessageInputChange(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
             onKeyPress={onKeyPress}
             className="pr-10"
           />
