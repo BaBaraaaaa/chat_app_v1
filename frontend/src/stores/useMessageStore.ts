@@ -189,16 +189,14 @@ export const useMessageStore = create<MessageState>((set, get) => ({
      * Setup Socket listeners
      */
     setupSocketListeners: () => {
-        console.log("🔧 Đang gọi setupMessageListeners - _listenersSetup:", get()._listenersSetup);
+        console.log("🔧 Đang thiết lập message listeners - _listenersSetup:", get()._listenersSetup);
         
         if (get()._listenersSetup) {
-            console.log("⚠️ Listeners đã được thiết lập rồi, bỏ qua...");
+            console.log("⚠️ Message listeners đã được setup, bỏ qua...");
             return;
         }
 
-        get().removeSocketListeners();
-
-        console.log("🔧 Đang thiết lập các listener cho tin nhắn...");
+        console.log("🔧 Đang đăng ký các listener Socket cho tin nhắn...");
 
         // Listen for message sent success
         messageService.onMessageSent((data) => {

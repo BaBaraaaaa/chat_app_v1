@@ -135,8 +135,6 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       return;
     }
 
-    console.log('🔧 Setting up core Socket connection listeners...');
-
     // === CORE CONNECTION LISTENERS ONLY ===
     
     // Online users list - Core connection feature
@@ -151,7 +149,6 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     // Request initial online users list
     socketService.getOnlineUsers();
     
-    console.log('✅ Core Socket listeners setup complete');
   },
 
   removeEventListeners: () => {

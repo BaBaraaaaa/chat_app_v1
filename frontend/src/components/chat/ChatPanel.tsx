@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import ChatSidebar from "./ChatSidebar";
-import ChatArea from "./ChatArea";
-import { NewChatDialog } from "./NewChatDialog";
+import { Box } from "@mui/material";
+import ChatSidebarMui from "./ChatSidebar-mui";
+import ChatAreaMui from "./ChatArea-mui";
+import { NewChatDialogMui } from "./NewChatDialog-mui";
 import { useConversationStore } from "@/stores/useConversationStore";
 import { useMessageStore } from "@/stores/useMessageStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -296,8 +297,8 @@ const ChatPanel = () => {
   return (
     <>
       {/* Chat Panel */}
-      <div className="flex flex-1">
-        <ChatSidebar
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%' }}>
+        <ChatSidebarMui
           contacts={contacts}
           selectedContact={selectedContact}
           onContactSelect={handleContactSelect}
@@ -305,17 +306,17 @@ const ChatPanel = () => {
           onSearchChange={handleSearchChange}
           onNewChat={handleNewChat}
         />
-        <ChatArea
+        <ChatAreaMui
           selectedContact={selectedContact}
           messages={uiMessages}
           onSendMessage={handleSendMessage}
           isFriend={isFriend}
           isActive={selectedConversation?.isActive ?? true}
         />
-      </div>
+      </Box>
 
       {/* New Chat Dialog */}
-      <NewChatDialog
+      <NewChatDialogMui
         open={newChatOpen}
         onOpenChange={setNewChatOpen}
         onConversationCreated={handleConversationCreated}

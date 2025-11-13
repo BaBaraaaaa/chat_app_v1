@@ -1,10 +1,10 @@
 import { createRoot } from "react-dom/client";
-import "./index.css";
+import "./index.mui.css";
 import App from "./App.tsx";
-import { ThemeProvider } from "./components/theme/ThemeProvider.tsx";
+import { CustomMuiThemeProvider } from "./theme/MuiThemeProvider.tsx";
 
 createRoot(document.getElementById("root")!).render(
-  <ThemeProvider>
+  <CustomMuiThemeProvider>
     <App />
-  </ThemeProvider>
+  </CustomMuiThemeProvider>
 );

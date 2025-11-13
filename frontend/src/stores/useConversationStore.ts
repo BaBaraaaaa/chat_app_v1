@@ -151,8 +151,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       return;
     }
 
-    get().removeSocketListeners();
-
     console.log("🔧 Đang thiết lập conversation Socket listeners...");
 
     // Listen for conversation created
