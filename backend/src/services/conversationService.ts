@@ -62,10 +62,24 @@ export class ConversationService {
           .populate('participants', 'username displayName avatar firstName lastName email');
       }
 
+      if (!conversation) {
+        return {
+          success: false,
+          message: "Không thể lấy cuộc hội thoại"
+        };
+      }
+
+      // ✅ Transform unreadCount Map thành số cho user hiện tại
+      const convObj = conversation.toObject();
+      const transformedConv = {
+        ...convObj,
+        unreadCount: conversation.unreadCount.get(userId1.toString()) || 0
+      };
+
       return {
         success: true,
         message: "Lấy cuộc hội thoại thành công",
-        data: conversation
+        data: transformedConv
       };
     } catch (error) {
       console.error("Lỗi tạo/lấy conversation:", error);
@@ -199,10 +213,17 @@ export class ConversationService {
       conversation.isActive = false;
       await conversation.save();
 
+      // ✅ Transform unreadCount Map thành số cho user hiện tại
+      const convObj = conversation.toObject();
+      const transformedConv = {
+        ...convObj,
+        unreadCount: conversation.unreadCount.get(userId.toString()) || 0
+      };
+
       return {
         success: true,
         message: "Đã xóa cuộc hội thoại",
-        data: conversation
+        data: transformedConv
       };
     } catch (error) {
       console.error("Lỗi xóa conversation:", error);
@@ -294,10 +315,19 @@ export class ConversationService {
         return matchParticipant || matchMessage;
       });
 
+      // ✅ Transform unreadCount Map thành số cho user hiện tại
+      const transformedConversations = filtered.map(conv => {
+        const convObj = conv.toObject();
+        return {
+          ...convObj,
+          unreadCount: conv.unreadCount.get(userId.toString()) || 0
+        };
+      });
+
       return {
         success: true,
         message: "Tìm kiếm cuộc hội thoại thành công",
-        data: filtered
+        data: transformedConversations
       };
     } catch (error) {
       console.error("Lỗi tìm kiếm conversations:", error);
