@@ -208,12 +208,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         // Listen for new message (real-time)
         console.log("🎧 Đang register listener NEW_MESSAGE...");
         messageService.onNewMessage((data) => {
-            console.log("📩 ============ NEW_MESSAGE EVENT TRIGGERED ============");
-            console.log("📩 Nhận được tin nhắn mới:", data);
+            console.log("📩 NEW_MESSAGE:", data.conversationId);
             
             get()._addMessage(data.conversationId, data.message);
-            
-            console.log("📨 Sau khi thêm tin nhắn - trạng thái messages:", get().messages);
 
             // ✅ Cập nhật sidebar conversation's lastMessage và unreadCount
             try {
@@ -222,57 +219,45 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 const currentUserId = currentUser?._id;
                 const currentConversation = conversationStore.currentConversation;
                 
-                console.log("📋 Danh sách cuộc trò chuyện hiện tại:", conversationStore.conversations);
-                console.log("📋 Đang cố cập nhật cuộc trò chuyện:", data.conversationId);
-                console.log("👤 ID người dùng hiện tại:", currentUserId);
-                console.log("👤 ID người gửi tin nhắn:", data.message.senderId);
-                console.log("💬 Cuộc trò chuyện đang xem:", currentConversation?._id);
-                
                 const conversation = conversationStore.conversations.find(c => c._id === data.conversationId);
                 
                 const isFromOtherUser = data.message.senderId._id !== currentUserId;
-                const isNotViewingConversation = currentConversation?._id !== data.conversationId;
-                const shouldIncreaseUnread = isFromOtherUser && isNotViewingConversation;
+                const isViewingConversation = currentConversation?._id === data.conversationId;
                 
-                const currentUnreadCount = conversation?.unreadCount || 0;
-                const newUnreadCount = shouldIncreaseUnread ? currentUnreadCount + 1 : currentUnreadCount;
-                
-                console.log("📊 Tính toán số tin nhắn chưa đọc:", {
-                    isFromOtherUser,
-                    isNotViewingConversation,
-                    shouldIncreaseUnread,
-                    currentUnreadCount,
-                    newUnreadCount
-                });
-                
-                if (isFromOtherUser) {
-                    console.log("🔔 Đây là tin nhắn từ NGƯỜI KHÁC - sidebar nên update!");
-                } else {
-                    console.log("👤 Đây là tin nhắn của CHÍNH BẠN - không tăng unread");
-                }
-                
-                conversationStore._updateConversation(data.conversationId, {
+                const updates: Partial<typeof conversation> = {
                     lastMessage: {
                         content: data.message.content,
                         senderId: data.message.senderId,
                         sentAt: data.message.createdAt,
                         type: data.message.type
                     },
-                    updatedAt: data.message.createdAt,
-                    unreadCount: newUnreadCount
-                });
+                    updatedAt: data.message.createdAt
+                };
+                
+                // ✅ Xử lý unreadCount:
+                // - Nếu KHÔNG đang xem conversation VÀ tin nhắn từ người khác → tăng unreadCount
+                // - Nếu ĐANG xem conversation VÀ tin nhắn từ người khác → backend đã tăng, frontend LOAD LẠI từ backend
+                if (isFromOtherUser && !isViewingConversation) {
+                    const currentUnreadCount = conversation?.unreadCount || 0;
+                    updates.unreadCount = currentUnreadCount + 1;
+                } else if (isFromOtherUser && isViewingConversation) {
+                    // Backend đã tăng unreadCount, frontend cần giữ nguyên giá trị CŨ + 1
+                    // hoặc fetch lại từ backend. Ở đây ta tăng 1 để sync với backend
+                    const currentUnreadCount = conversation?.unreadCount || 0;
+                    updates.unreadCount = currentUnreadCount + 1;
+                    console.log("🔵 Viewing conversation - backend increased unreadCount, frontend sync:", updates.unreadCount);
+                }
+                
+                conversationStore._updateConversation(data.conversationId, updates);
 
                 const updatedConversations = useConversationStore.getState().conversations;
-                console.log("📋 Danh sách cuộc trò chuyện sau khi cập nhật:", updatedConversations);
 
                 const sorted = [...updatedConversations].sort((a, b) => 
                     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
                 );
                 
-                console.log("📋 Danh sách cuộc trò chuyện đã sắp xếp:", sorted);
                 conversationStore._setConversations(sorted);
-                
-                console.log("✅ Đã cập nhật sidebar với tin nhắn mới");
+                console.log("✅ Updated sidebar", { isViewingConversation, updates });
             } catch (error) {
                 console.error("❌ Lỗi khi cập nhật sidebar:", error);
             }

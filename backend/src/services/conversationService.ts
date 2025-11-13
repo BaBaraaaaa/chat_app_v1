@@ -228,7 +228,9 @@ export class ConversationService {
           [`unreadCount.${userId.toString()}`]: 0
         },
         { new: true }
-      );
+      )
+        .populate('participants', 'username displayName avatar firstName lastName email')
+        .populate('lastMessage.senderId', 'username displayName avatar');
 
       if (!conversation) {
         return {
@@ -237,10 +239,17 @@ export class ConversationService {
         };
       }
 
+      // ✅ Transform unreadCount Map thành số cho user hiện tại
+      const convObj = conversation.toObject();
+      const transformedConv = {
+        ...convObj,
+        unreadCount: conversation.unreadCount.get(userId.toString()) || 0
+      };
+
       return {
         success: true,
         message: "Đã reset unread count",
-        data: conversation
+        data: transformedConv
       };
     } catch (error) {
       console.error("Lỗi reset unread count:", error);

@@ -216,6 +216,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     // Listen for reset unread count success
     conversationService.onResetUnreadCountSuccess((data) => {
       console.log("✅ Reset unread count thành công:", data);
+      // ✅ Cập nhật conversation từ server response để đảm bảo đồng bộ
+      if (data.success && data.data) {
+        get()._updateConversation(data.data._id, { unreadCount: 0 });
+      }
     });
 
     // Listen for errors
