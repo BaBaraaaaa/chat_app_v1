@@ -31,6 +31,7 @@ interface ChatAreaProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   isFriend?: boolean;
+  isActive?: boolean;
 }
 
 const ChatArea = ({
@@ -38,6 +39,7 @@ const ChatArea = ({
   messages,
   onSendMessage,
   isFriend = true,
+  isActive = true,
 }: ChatAreaProps) => {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState<string>("");
@@ -166,8 +168,8 @@ const ChatArea = ({
         </div>
       </div>
 
-      {/* ✅ Warning Banner nếu không phải bạn bè */}
-      {!isFriend && (
+      {/* ✅ Warning Banner nếu không phải bạn bè hoặc conversation không active */}
+      {(!isFriend || !isActive) && (
         <Alert
           variant="destructive"
           className="m-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20"
@@ -193,7 +195,7 @@ const ChatArea = ({
       <MessageInput
         initialValue={editingContent}
         onSendMessage={handleSendOrEdit}
-        disabled={!isFriend}
+        disabled={!isFriend || !isActive}
         editingMessageId={editingMessageId}
         onCancelEdit={handleCancelEdit}
       />

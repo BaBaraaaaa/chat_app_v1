@@ -47,8 +47,6 @@ const ChatPanel = () => {
 
   // ✅ Load conversations và friends khi connected
   useEffect(() => {
-
-
     if (isConnected && user) {
       console.log("📋 ChatPanel: Loading conversations and friends");
       getConversations();
@@ -80,10 +78,9 @@ const ChatPanel = () => {
         selectedConversation.unreadCount &&
         selectedConversation.unreadCount > 0
       ) {
-
         // ✅ Update local state ngay lập tức (optimistic update)
         _updateConversation(selectedConversation._id, { unreadCount: 0 });
-        
+
         // ✅ Gọi API để persist vào database
         conversationService.resetUnreadCount({
           conversationId: selectedConversation._id,
@@ -104,10 +101,9 @@ const ChatPanel = () => {
   // Tự động đánh dấu đã đọc khi có tin nhắn mới đến TRONG conversation đang mở
   useEffect(() => {
     if (!selectedConversation || !isConnected) {
-      console.log("🔴 Skip auto-mark-read: no conversation or not connected");
       return;
     }
-    
+
     const currentMessages = messages[selectedConversation._id] || [];
     if (currentMessages.length === 0) {
       console.log("🔴 Skip auto-mark-read: no messages");
@@ -116,38 +112,65 @@ const ChatPanel = () => {
 
     //lấy tin nhắn mới nhất
     const latestMessage = currentMessages[currentMessages.length - 1];
-    console.log("🔵 Latest message:", {
-      content: latestMessage.content?.substring(0, 30),
-      senderId: latestMessage.senderId._id,
-      currentUserId: user?._id,
-      isFromOther: latestMessage.senderId._id !== user?._id
-    });
-    
+
     //Nếu tin nhắn mới nhất không phải do user gửi thì đánh dấu đã đọc
     if (latestMessage && latestMessage.senderId._id !== user?._id) {
       // ✅ Tìm conversation hiện tại để check unreadCount từ store (có thể đã được cập nhật bởi NEW_MESSAGE event)
-      const currentConv = conversations.find(c => c._id === selectedConversation._id);
-      console.log("🔵 Current conversation unreadCount:", currentConv?.unreadCount);
-      
-      if (currentConv && currentConv.unreadCount && currentConv.unreadCount > 0) {
-        console.log("📖 Đánh dấu đã đọc - tin nhắn mới trong conversation đang mở");
-        
+      const currentConv = conversations.find(
+        (c) => c._id === selectedConversation._id
+      );
+      console.log(
+        "🔵 Current conversation unreadCount:",
+        currentConv?.unreadCount
+      );
+
+      if (
+        currentConv &&
+        currentConv.unreadCount &&
+        currentConv.unreadCount > 0
+      ) {
+        console.log(
+          "📖 Đánh dấu đã đọc - tin nhắn mới trong conversation đang mở"
+        );
+
         // ✅ Cập nhật local state
         _updateConversation(selectedConversation._id, { unreadCount: 0 });
-        
+
         // ✅ Gọi API để persist vào database
         conversationService.resetUnreadCount({
           conversationId: selectedConversation._id,
         });
       } else {
-        console.log("🔴 Skip auto-mark-read: unreadCount is 0 or conversation not found");
+        console.log(
+          "🔴 Skip auto-mark-read: unreadCount is 0 or conversation not found"
+        );
       }
     }
-  }, [messages, selectedConversation?._id, isConnected, user?._id, conversations, _updateConversation]);
-  
+  }, [
+    messages,
+    selectedConversation?._id,
+    isConnected,
+    user?._id,
+    conversations,
+    _updateConversation,
+  ]);
+
+  // ✅ Detect khi conversation đang xem bị xóa (user unfriend)
+  useEffect(() => {
+    if (selectedConversation) {
+      const stillExists = conversations.find(c => c._id === selectedConversation._id);
+      if (!stillExists) {
+        console.log("🔴 Conversation đã bị xóa, clear selection");
+        setSelectedConversation(null);
+        setCurrentConversation(null);
+      }
+    }
+  }, [conversations, selectedConversation]);
+
   // Convert Conversation to Contact format cho UI
   const contacts = useMemo((): Contact[] => {
     return conversations
+      .filter(conv => conv.isActive) // ✅ Chỉ hiển thị conversation active
       .map((conv) => {
         const otherUser = conv.participants.find((p) => p._id !== user?._id);
         if (!otherUser) return null;
@@ -287,6 +310,7 @@ const ChatPanel = () => {
           messages={uiMessages}
           onSendMessage={handleSendMessage}
           isFriend={isFriend}
+          isActive={selectedConversation?.isActive ?? true}
         />
       </div>
 

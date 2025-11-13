@@ -3,6 +3,7 @@ import { socketService } from "@/services/socketService";
 import type { FriendState } from "@/type/store";
 import { toast } from "sonner";
 import { create } from "zustand";
+import { useConversationStore } from "./useConversationStore";
 
 interface ApiError {
     response?: {
@@ -346,6 +347,20 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         // ⚠️ Event này dành cho NGƯỜI GỬI lời mời, không phải người xử lý
         socketService.onFriendRequestResponse((data) => {
             console.log('💬 Nhận phản hồi lời mời kết bạn (sender):', data);
+            
+            // ✅ Nếu được accept, active lại conversation
+            if (data.response === 'accepted' && data.responderId) {
+                const conversationStore = useConversationStore.getState();
+                const conversations = conversationStore.conversations;
+                const conversationToActivate = conversations.find(conv => 
+                    conv.participants.some(p => p._id === data.responderId)
+                );
+                
+                if (conversationToActivate && !conversationToActivate.isActive) {
+                    conversationStore._updateConversation(conversationToActivate._id, { isActive: true });
+                }
+            }
+            
             // Refresh cả friends và requests
             get().getFriendsList();
             get().getFriendRequests();
@@ -361,8 +376,28 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // Lắng nghe khi chính mình xử lý friend request (accept/decline)
         // ✅ Event này dành cho NGƯỜI XỬ LÝ (responder)
-        socketService.onFriendRequestProcessed((data) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        socketService.onFriendRequestProcessed((data: any) => {
             console.log('✅ Đã xử lý lời mời kết bạn (responder):', data);
+            
+            // ✅ Nếu accept, active lại conversation (dùng senderId từ friendRequest)
+            if (data.friendRequest?.response === 'accepted' && data.friendRequest?.senderId) {
+                const conversationStore = useConversationStore.getState();
+                const conversations = conversationStore.conversations;
+                const senderId = typeof data.friendRequest.senderId === 'string' 
+                    ? data.friendRequest.senderId 
+                    : data.friendRequest.senderId._id;
+                    
+                const conversationToActivate = conversations.find(conv => 
+                    conv.participants.some(p => p._id === senderId)
+                );
+                
+                if (conversationToActivate && !conversationToActivate.isActive) {
+                    console.log('🔓 Active lại conversation với user vừa được accept:', conversationToActivate._id);
+                    conversationStore._updateConversation(conversationToActivate._id, { isActive: true });
+                }
+            }
+            
             // Refresh cả friends và requests ngay lập tức
             get().getFriendsList();
             get().getFriendRequests();
@@ -411,6 +446,19 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         // Lắng nghe khi friend bị xóa
         socketService.onFriendRemoved((data) => {
             console.log('🗑️ Bạn bè đã bị xóa:', data);
+            
+            // ✅ Đánh dấu conversation với user này là không active
+            const conversationStore = useConversationStore.getState();
+            const conversations = conversationStore.conversations;
+            const conversationToDisable = conversations.find(conv => 
+                conv.participants.some(p => p._id === data.fromUserId)
+            );
+            
+            if (conversationToDisable) {
+                console.log('� Đánh dấu conversation không active với user đã unfriend:', conversationToDisable._id);
+                conversationStore._updateConversation(conversationToDisable._id, { isActive: false });
+            }
+            
             // Refresh danh sách friends
             get().getFriendsList();
             
@@ -422,6 +470,22 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         socketService.onRemoveFriendSuccess((data) => {
             console.log('✅ Đã xóa bạn bè thành công:', data);
             if (data.success) {
+                // ✅ Đánh dấu conversation với user này là không active
+                const conversationStore = useConversationStore.getState();
+                const conversations = conversationStore.conversations;
+                const removedFriendId = data.data?.removedFriend?._id;
+                
+                if (removedFriendId) {
+                    const conversationToDisable = conversations.find(conv => 
+                        conv.participants.some(p => p._id === removedFriendId)
+                    );
+                    
+                    if (conversationToDisable) {
+                        console.log('� Đánh dấu conversation không active với user đã unfriend:', conversationToDisable._id);
+                        conversationStore._updateConversation(conversationToDisable._id, { isActive: false });
+                    }
+                }
+                
                 // Refresh danh sách friends
                 get().getFriendsList();
                 toast.success(data.message || 'Đã xóa bạn bè thành công!');
