@@ -1,4 +1,5 @@
 import type { User } from "./user";
+import type { FriendRequest } from "../types/socket";
 
 
 export interface AuthState {
@@ -35,27 +36,16 @@ export interface Friend {
     status?: string;
 }
 
-export interface FriendRequest {
-    _id: string;
-    fromUserId: string;
-    toUserId: {
-        _id: string;
-        displayName: string;
-        avatarUrl?: string;
-        lastName?: string;
-        firstName?: string;
-    };
-    status: 'pending' | 'accepted' | 'declined' | 'cancelled';
-    message?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
 export interface FriendState {
     friends: Friend[];
     receivedRequests: FriendRequest[];
     sentRequests: FriendRequest[];
     loading: boolean;
+    
+    // Internal flags
+    _listenersSetup: boolean;
+    
+    // REST API methods
     getFriendsList: () => Promise<void>;
     getFriendRequests: () => Promise<void>;
     getSentRequests: () => Promise<void>;
@@ -64,4 +54,13 @@ export interface FriendState {
     acceptFriendRequest: (requestId: string) => Promise<void>;
     declineFriendRequest: (requestId: string) => Promise<void>;
     cancelFriendRequest: (requestId: string) => Promise<void>;
+    removeFriend: (friendId: string) => Promise<void>;
+    
+    // Socket.IO methods
+    sendFriendRequestSocket: (toUserId: string, fromUserId: string, message?: string) => Promise<void>;
+    acceptFriendRequestSocket: (requestId: string, userId: string) => Promise<void>;
+    declineFriendRequestSocket: (requestId: string, userId: string) => Promise<void>;
+    cancelFriendRequestSocket: (requestId: string, userId: string) => Promise<void>;
+    setupSocketListeners: () => void;
+    removeSocketListeners: () => void;
 }

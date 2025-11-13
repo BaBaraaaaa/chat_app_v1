@@ -6,7 +6,8 @@ import {
     getFriendRequests, 
     cancelFriendRequest,
     getSentFriendRequests, 
-    getFriendsList
+    getFriendsList,
+    removeFriend
 } from '../controllers/friendsController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
@@ -37,5 +38,8 @@ router.get('/received', getFriendRequests);
 
 // Lấy danh sách lời mời đã gửi
 router.get('/sent', getSentFriendRequests);
+
+// Xóa bạn bè (dùng friendId trong params)
+router.delete('/remove/:friendId', removeFriend);
 
 export default router;

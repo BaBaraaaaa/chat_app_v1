@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
+import { useMessageStore } from "@/stores/useMessageStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,28 +19,68 @@ import {
   MessageCircle,
   UserPlus,
   Users,
+  AlertTriangle,
 } from "lucide-react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import type { Contact, Message } from "../../types/chat";
+import { toast } from "sonner";
 
 interface ChatAreaProps {
   selectedContact: Contact | null;
   messages: Message[];
-  messageInput: string;
-  onMessageInputChange: (value: string) => void;
-  onSendMessage: () => void;
-  onKeyPress: (e: React.KeyboardEvent) => void;
+  onSendMessage: (content: string) => void;
+  isFriend?: boolean;
+  isActive?: boolean;
 }
 
 const ChatArea = ({
   selectedContact,
   messages,
-  messageInput,
-  onMessageInputChange,
   onSendMessage,
-  onKeyPress,
+  isFriend = true,
+  isActive = true,
 }: ChatAreaProps) => {
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>("");
+  const { editMessage } = useMessageStore();
+
+  // Handle edit message
+  const handleEditMessage = (messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setEditingContent(content);
+  };
+
+  // Handle save edited message
+  const handleSaveEdit = (content: string) => {
+    if (editingMessageId && content.trim()) {
+      editMessage(editingMessageId, content.trim());
+      setEditingMessageId(null);
+      setEditingContent("");
+    }
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingContent("");
+  };
+
+  // Handle send or edit
+  const handleSendOrEdit = (content: string) => {
+    if (editingMessageId) {
+      handleSaveEdit(content);
+    } else {
+      onSendMessage(content);
+    }
+  };
+  //ToDo: 
+  const handleCallPhone = () => {toast.warning("Chức năng gọi điện thoại đang được phát triển",)};
+  const handleCallVideo = () => {toast.warning("Chức năng gọi video đang được phát triển",)};
+  const handleViewProfile = () => {toast.warning("Chức năng xem hồ sơ đang được phát triển",)};
+  const handleSearch = () => {toast.warning("Chức năng tìm kiếm tin nhắn đang được phát triển",)};
+  const handleArchive = () => {toast.warning("Chức năng lưu trữ tin nhắn đang được phát triển",)};
+
   if (!selectedContact) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -94,10 +137,10 @@ const ChatArea = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={handleCallPhone}>
               <Phone className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={handleCallVideo}>
               <Video className="w-4 h-4" />
             </Button>
             <DropdownMenu>
@@ -107,16 +150,16 @@ const ChatArea = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={handleViewProfile}>
+                  <User className="mr-2 h-4 w-4"  />
                   <span>Xem hồ sơ</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Search className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={handleSearch}>
+                  <Search className="mr-2 h-4 w-4"  />
                   <span>Tìm tin nhắn</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Archive className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={handleArchive}>
+                  <Archive className="mr-2 h-4 w-4"  />
                   <span>Lưu trữ cuộc trò chuyện</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -125,15 +168,36 @@ const ChatArea = ({
         </div>
       </div>
 
+      {/* ✅ Warning Banner nếu không phải bạn bè hoặc conversation không active */}
+      {(!isFriend || !isActive) && (
+        <Alert
+          variant="destructive"
+          className="m-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20"
+        >
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Người này không còn trong danh sách bạn bè của bạn.</strong>
+            <br />
+            Bạn không thể gửi tin nhắn mới. Thêm lại bạn bè để tiếp tục trò
+            chuyện.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Messages */}
-      <MessageList messages={messages} selectedContact={selectedContact} />
+      <MessageList
+        messages={messages}
+        selectedContact={selectedContact}
+        onEditMessage={handleEditMessage}
+      />
 
       {/* Message Input */}
       <MessageInput
-        messageInput={messageInput}
-        onMessageInputChange={onMessageInputChange}
-        onSendMessage={onSendMessage}
-        onKeyPress={onKeyPress}
+        initialValue={editingContent}
+        onSendMessage={handleSendOrEdit}
+        disabled={!isFriend || !isActive}
+        editingMessageId={editingMessageId}
+        onCancelEdit={handleCancelEdit}
       />
     </div>
   );

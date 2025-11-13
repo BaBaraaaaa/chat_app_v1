@@ -25,6 +25,7 @@ interface ChatSidebarProps {
   onContactSelect: (contact: Contact) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onNewChat?: () => void;
 }
 
 const ChatSidebar = ({
@@ -33,6 +34,7 @@ const ChatSidebar = ({
   onContactSelect,
   searchQuery,
   onSearchChange,
+  onNewChat,
 }: ChatSidebarProps) => {
   return (
     <div className="w-full md:w-80 border-r border-border flex flex-col overflow-y-hidden bg-card">
@@ -41,7 +43,7 @@ const ChatSidebar = ({
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Trò chuyện</h2>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={onNewChat}>
               <UserPlus className="w-4 h-4" />
             </Button>
             <DropdownMenu>
