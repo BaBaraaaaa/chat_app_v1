@@ -226,6 +226,15 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }
     });
 
+    // Listen for conversation updated (e.g., after deleting message)
+    conversationService.onConversationUpdated((data) => {
+      console.log("🔄 Conversation updated:", data);
+      if (data.conversationId && data.updates) {
+        get()._updateConversation(data.conversationId, data.updates);
+        console.log("✅ Updated conversation lastMessage:", data.updates.lastMessage);
+      }
+    });
+
     // Listen for errors
     conversationService.onConversationError((data) => {
       console.error("❌ Lỗi conversation:", data);

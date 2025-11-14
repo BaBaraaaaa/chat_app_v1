@@ -295,9 +295,40 @@ export class MessageService {
         };
       }
 
+      const conversationId = message.conversationId;
+
+      // Soft delete message
       message.isDeleted = true;
       message.deletedAt = new Date();
       await message.save();
+
+      // ✅ Cập nhật lastMessage trong conversation
+      // Tìm tin nhắn gần nhất chưa bị xóa
+      const latestMessage = await Message.findOne({
+        conversationId,
+        isDeleted: false
+      })
+        .sort({ createdAt: -1 })
+        .populate('senderId', 'username displayName avatar');
+
+      if (latestMessage) {
+        // Còn tin nhắn → Cập nhật lastMessage thành tin nhắn gần nhất
+        await Conversation.findByIdAndUpdate(conversationId, {
+          lastMessage: {
+            content: latestMessage.content,
+            senderId: latestMessage.senderId,
+            sentAt: latestMessage.createdAt,
+            type: latestMessage.type
+          }
+        });
+        console.log(`✅ Updated lastMessage to latest message: ${latestMessage._id}`);
+      } else {
+        // Không còn tin nhắn nào → Xóa lastMessage
+        await Conversation.findByIdAndUpdate(conversationId, {
+          $unset: { lastMessage: "" }
+        });
+        console.log(`✅ Removed lastMessage (no messages left in conversation)`);
+      }
 
       return {
         success: true,

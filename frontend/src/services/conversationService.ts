@@ -18,7 +18,8 @@ import type {
   ResetUnreadCountPayload,
   ResetUnreadCountSuccessResponse,
   ConversationErrorResponse,
-  SocketEventCallback
+  SocketEventCallback,
+  ConversationUpdatedResponse
 } from '@/types/message';
 
 class ConversationService {
@@ -169,6 +170,13 @@ class ConversationService {
   }
 
   /**
+   * Listen for conversation updated (e.g., lastMessage changed)
+   */
+  onConversationUpdated(callback: SocketEventCallback<ConversationUpdatedResponse>): void {
+    socketService.on('CONVERSATION_UPDATED', callback as (...args: unknown[]) => void);
+  }
+
+  /**
    * Listen for conversation error
    */
   onConversationError(callback: SocketEventCallback<ConversationErrorResponse>): void {
@@ -230,6 +238,7 @@ class ConversationService {
     socketService.removeListener('DELETE_CONVERSATION_SUCCESS');
     socketService.removeListener('TOTAL_UNREAD_COUNT');
     socketService.removeListener('RESET_UNREAD_COUNT_SUCCESS');
+    socketService.removeListener('CONVERSATION_UPDATED');
     socketService.removeListener('CONVERSATION_ERROR');
     socketService.removeListener('CONVERSATIONS_ERROR');
     socketService.removeListener('CONVERSATION_DETAIL_ERROR');

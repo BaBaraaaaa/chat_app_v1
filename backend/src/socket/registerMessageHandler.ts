@@ -249,10 +249,31 @@ export const registerMessageHandler = (
         // 📤 Thông báo cho các participants khác trong conversation
         const message = result.data;
         if (message && message.conversationId) {
-          socket.to(`conversation_${message.conversationId}`).emit("MESSAGE_DELETED", {
+          const roomName = `conversation_${message.conversationId}`;
+          
+          // Emit MESSAGE_DELETED event
+          socket.to(roomName).emit("MESSAGE_DELETED", {
             messageId,
             conversationId: message.conversationId
           });
+
+          // ✅ Lấy conversation đã cập nhật để gửi thông tin lastMessage mới
+          const updatedConversation = await conversationController.getConversationById(
+            message.conversationId,
+            userId
+          );
+
+          if (updatedConversation.success && updatedConversation.data) {
+            // Emit CONVERSATION_UPDATED để cập nhật lastMessage mới
+            io.to(roomName).emit("CONVERSATION_UPDATED", {
+              conversationId: message.conversationId,
+              updates: {
+                lastMessage: updatedConversation.data.lastMessage || null,
+                updatedAt: updatedConversation.data.updatedAt
+              }
+            });
+            console.log(`✅ Emitted CONVERSATION_UPDATED with new lastMessage`);
+          }
         }
 
         console.log(`🗑️ User ${userId} đã xóa tin nhắn ${messageId}`);
