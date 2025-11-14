@@ -53,9 +53,10 @@ const FriendsMainContentMui = () => {
     getFriendsList,
   } = useFriendStore();
 
-  const [newFriendEmail, setNewFriendEmail] = useState('');
+  const [newFriendUserName, setNewFriendUserName] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [newFriendMessage, setNewFriendMessage] = useState('Xin chào! Mình muốn kết bạn với bạn.');
 
   // Tính số bạn bè đang online
   const onlineFriendsCount = useMemo(
@@ -63,31 +64,24 @@ const FriendsMainContentMui = () => {
     [friends, onlineUsers]
   );
 
-  // Debug log
-  console.log('🔍 FriendsMainContent Debug:', {
-    totalFriends: friends.length,
-    onlineFriendsCount,
-    friendIds: friends.map((f) => f._id),
-    isUserOnlineCheck: friends.map((f) => ({ id: f._id, online: isUserOnline(f._id) })),
-  });
-
   // Gửi lời mời kết bạn
   const handleSendRequest = async () => {
-    if (!newFriendEmail.trim()) {
-      toast.error('Vui lòng nhập email');
+    if (!newFriendUserName.trim()) {
+      toast.error('Vui lòng nhập tên người dùng');
       return;
     }
 
-    if (newFriendEmail === user?.email) {
+    if (newFriendUserName === user?.username) {
       toast.error('Không thể gửi lời mời cho chính mình');
       return;
     }
 
     setSendingRequest(true);
     try {
-      await sendFriendRequestByUsername(newFriendEmail);
+      await sendFriendRequestByUsername(newFriendUserName, newFriendMessage);
       // Socket listener sẽ xử lý toast tự động
-      setNewFriendEmail('');
+      setNewFriendUserName('');
+      setNewFriendMessage('');
       setIsAddDialogOpen(false);
     } catch (error) {
       console.error('Error sending friend request:', error);
@@ -294,9 +288,11 @@ const FriendsMainContentMui = () => {
                             <Typography variant="subtitle1" fontWeight={600}>
                               {request.fromUserId.displayName || request.fromUserId.username}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {request.fromUserId.firstName} {request.fromUserId.lastName}
-                            </Typography>
+                            {request.message && (
+                              <Typography variant="body2" color="text.secondary">
+                              Lời nhắn:   {request.message}
+                              </Typography>
+                            )}
                             <Typography variant="caption" color="text.secondary">
                               {formatTime(request.createdAt)}
                             </Typography>
@@ -372,9 +368,11 @@ const FriendsMainContentMui = () => {
                           <Typography variant="subtitle1" fontWeight={600}>
                             {request.toUserId.displayName}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {request.toUserId.firstName} {request.toUserId.lastName}
-                          </Typography>
+                          {request.message && (
+                              <Typography variant="body2" color="text.secondary">
+                              Lời nhắn:   {request.message}
+                              </Typography>
+                            )}
                           <Typography variant="caption" color="text.secondary">
                             Gửi {formatTime(request.createdAt)}
                           </Typography>
@@ -524,23 +522,34 @@ const FriendsMainContentMui = () => {
       {/* Dialog thêm bạn */}
       <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <Typography variant="h6" fontWeight={600}>
+          <Typography component="div" variant='h6' fontWeight={600}>
             Gửi lời mời kết bạn
           </Typography>
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              Email người dùng
+              Nhập username mà bạn muốn kết bạn
             </Typography>
             <TextField
               fullWidth
-              type="email"
-              placeholder="Nhập email..."
-              value={newFriendEmail}
-              onChange={(e) => setNewFriendEmail(e.target.value)}
+              type="text"
+              placeholder="Nhập tên người dùng..."
+              value={newFriendUserName}
+              onChange={(e) => setNewFriendUserName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendRequest()}
               autoFocus
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Nhập lời nhắn kèm (tùy chọn)
+            </Typography>
+            <TextField 
+              fullWidth
+              type="text"
+              placeholder="Nhập lời nhắn..."
+              value={newFriendMessage}
+              onChange={(e) => setNewFriendMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendRequest()}
             />
           </Box>
         </DialogContent>

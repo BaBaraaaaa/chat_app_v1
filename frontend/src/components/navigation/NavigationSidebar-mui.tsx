@@ -24,7 +24,7 @@ export default function NavigationSidebarMui({
   const { user, signOut } = useAuthStore();
 
   const menuItems = [
-    { id: 'chat' as const, icon: <Chat />, tooltip: 'Chat' },
+    { id: 'chat' as const, icon: <Chat />, tooltip: 'Tin nhắn' },
     { id: 'friends' as const, icon: <People />, tooltip: 'Bạn bè' },
     {
       id: 'notifications' as const,
@@ -63,7 +63,7 @@ export default function NavigationSidebarMui({
             fontSize: '1.5rem',
           }}
         >
-          C
+          
         </Avatar>
       </Box>
 

@@ -6,7 +6,6 @@ import ThemeTestPage from "./pages/ThemeTestPage";
 import { Toaster } from "sonner";
 import ProtectedRouter from "./components/auth/ProtectedRouter";
 import PublicRoute from "./components/auth/PublicRoute";
-import { SocketTestPage } from "./pages/SocketTestPage";
 
 function App() {
   return (
@@ -26,7 +25,6 @@ function App() {
 
           {/* Private routes */}
           <Route element={<ProtectedRouter />}>
-          <Route path="/testSocket" element={<SocketTestPage />} />
             <Route path="/chat" element={<ChatAppPage />} />
           </Route>
         </Routes>
