@@ -49,14 +49,14 @@ export const useSocket = () => {
             
             // ✅ Setup TẤT CẢ socket listeners chỉ một lần
             if (!listenersSetupRef.current) {
-              console.log('🎧 Setting up ALL socket listeners (Friend, Conversation, Message)');
+              console.log('🎧 Đang thiết lập TẤT CẢ các socket listeners (Friend, Conversation, Message)');
               setupSocketListeners();         // Friend listeners
               setupConversationListeners();   // Conversation listeners
               setupMessageListeners();        // Message listeners
               listenersSetupRef.current = true;
             }
             
-            console.log('✅ Socket connected and user registered:', user.username);
+            console.log('✅ Socket đã kết nối và đăng ký người dùng:', user.username);
           }
         })
         .catch((error) => {

@@ -255,7 +255,6 @@ class SocketService {
     }
 
     on(event: string, callback: (...args: unknown[]) => void): void {
-        console.log(`🔔 Registering listener for event: ${event}`);
         this.socket?.on(event, (...args) => {
             console.log(`📡 Received event: ${event}`, args);
             callback(...args);

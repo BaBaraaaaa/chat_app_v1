@@ -32,9 +32,12 @@ export const registerMessageHandler = (
     attachments?: any[];
     replyTo?: string;
   }) => {
+    console.log(`🔵 SEND_MESSAGE received from socket ${socket.id}:`, data);
     try {
       const senderId = socket.data.userId;
+      console.log(`🔵 Sender ID: ${senderId}`);
       if (!senderId) {
+        console.error("❌ No userId in socket.data");
         socket.emit("MESSAGE_ERROR", {
           success: false,
           message: "Người dùng chưa được xác thực."
@@ -74,12 +77,22 @@ export const registerMessageHandler = (
         console.log(`📢 Broadcasting NEW_MESSAGE to room: ${roomName}`);
         console.log(`👥 Clients in room:`, io.sockets.adapter.rooms.get(roomName)?.size || 0);
         
-        // ✅ Broadcast NEW_MESSAGE cho TẤT CẢ clients trong conversation
-        // Bao gồm cả người gửi để cập nhật UI của họ
+        // ✅ Broadcast NEW_MESSAGE cho TẤT CẢ clients trong conversation room
         io.to(roomName).emit("NEW_MESSAGE", {
           message: result.data,
           conversationId
         });
+
+        // ✅ Đảm bảo receiver nhận được message ngay cả khi chưa join room
+        // (Trường hợp conversation mới tạo, receiver chưa có trong list nên chưa join room)
+        const receiver = onlineUsers.find(u => u.userId === receiverId);
+        if (receiver && receiver.socketId !== socket.id) {
+          console.log(`📤 Sending NEW_MESSAGE directly to receiver: ${receiverId}`);
+          io.to(receiver.socketId).emit("NEW_MESSAGE", {
+            message: result.data,
+            conversationId
+          });
+        }
 
         // ✅ Xác nhận riêng cho người gửi
         socket.emit("MESSAGE_SENT", {
@@ -246,10 +259,31 @@ export const registerMessageHandler = (
         // 📤 Thông báo cho các participants khác trong conversation
         const message = result.data;
         if (message && message.conversationId) {
-          socket.to(`conversation_${message.conversationId}`).emit("MESSAGE_DELETED", {
+          const roomName = `conversation_${message.conversationId}`;
+          
+          // Emit MESSAGE_DELETED event
+          socket.to(roomName).emit("MESSAGE_DELETED", {
             messageId,
             conversationId: message.conversationId
           });
+
+          // ✅ Lấy conversation đã cập nhật để gửi thông tin lastMessage mới
+          const updatedConversation = await conversationController.getConversationById(
+            message.conversationId,
+            userId
+          );
+
+          if (updatedConversation.success && updatedConversation.data) {
+            // Emit CONVERSATION_UPDATED để cập nhật lastMessage mới
+            io.to(roomName).emit("CONVERSATION_UPDATED", {
+              conversationId: message.conversationId,
+              updates: {
+                lastMessage: updatedConversation.data.lastMessage || null,
+                updatedAt: updatedConversation.data.updatedAt
+              }
+            });
+            console.log(`✅ Emitted CONVERSATION_UPDATED with new lastMessage`);
+          }
         }
 
         console.log(`🗑️ User ${userId} đã xóa tin nhắn ${messageId}`);

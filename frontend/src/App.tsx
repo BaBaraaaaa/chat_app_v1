@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import ChatAppPage from "./pages/ChatAppPage";
+import ThemeTestPage from "./pages/ThemeTestPage";
 import { Toaster } from "sonner";
 import ProtectedRouter from "./components/auth/ProtectedRouter";
 import PublicRoute from "./components/auth/PublicRoute";
@@ -20,6 +21,7 @@ function App() {
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<SignInPage />} />
             <Route path="/register" element={<SignUpPage />} />
+            <Route path="/theme-test" element={<ThemeTestPage />} />
           </Route>
 
           {/* Private routes */}

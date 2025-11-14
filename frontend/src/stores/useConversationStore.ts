@@ -151,17 +151,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       return;
     }
 
-    get().removeSocketListeners();
-
     console.log("🔧 Đang thiết lập conversation Socket listeners...");
 
     // Listen for conversation created
     conversationService.onConversationCreated((data) => {
       console.log("✅ Conversation created:", data);
       if (data.success && data.data) {
+        // ✅ Luôn add vào list để có thể track
         get()._addConversation(data.data);
+        // ✅ Set làm current conversation để có thể nhắn tin ngay
         get().setCurrentConversation(data.data);
         set({ loading: false });
+        console.log("📝 Conversation added to list and set as current");
       } else {
         set({ loading: false });
       }
@@ -171,8 +172,11 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     conversationService.onConversationsList((data) => {
       console.log("📬 Nhận danh sách conversations:", data);
       if (data.success && data.data) {
+        // ✅ Lưu TẤT CẢ conversations vào store
+        // UI sẽ tự filter để chỉ hiển thị conversations có lastMessage hoặc là currentConversation
         get()._setConversations(data.data);
         set({ loading: false });
+        console.log(`📋 Loaded ${data.data.length} conversations into store`);
       } else {
         set({ loading: false });
         toast.error("Không thể tải danh sách cuộc hội thoại");
@@ -219,6 +223,15 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       // ✅ Cập nhật conversation từ server response để đảm bảo đồng bộ
       if (data.success && data.data) {
         get()._updateConversation(data.data._id, { unreadCount: 0 });
+      }
+    });
+
+    // Listen for conversation updated (e.g., after deleting message)
+    conversationService.onConversationUpdated((data) => {
+      console.log("🔄 Conversation updated:", data);
+      if (data.conversationId && data.updates) {
+        get()._updateConversation(data.conversationId, data.updates);
+        console.log("✅ Updated conversation lastMessage:", data.updates.lastMessage);
       }
     });
 

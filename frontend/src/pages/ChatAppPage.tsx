@@ -1,9 +1,9 @@
 import { useState } from "react";
-import Layout from "@/components/layout/Layout";
+import LayoutMui from "@/components/layout/Layout-mui";
 import ChatPanel from "@/components/chat/ChatPanel";
-import FriendsPanel from "@/components/friends/FriendsPanel";
-import NotificationsPanel from "@/components/notifications/NotificationsPanel";
-import SettingsPanel from "@/components/settings/SettingsPanel";
+import FriendsPanelMui from "@/components/friends/FriendsPanel-mui";
+import NotificationsPanelMui from "@/components/notifications/NotificationsPanel-mui";
+import SettingsPanelMui from "@/components/settings/SettingsPanel-mui";
 import { useSocket } from "@/hooks/useSocket";
 // import { SocketDebugPanel } from "@/components/debug/SocketDebugPanel";
 
@@ -19,12 +19,12 @@ const ChatAppPage = () => {
         return <ChatPanel />;
       
       case 'friends':
-        return <FriendsPanel />;
+        return <FriendsPanelMui />;
 
       case 'notifications':
-        return <NotificationsPanel />;
+        return <NotificationsPanelMui />;
       case 'settings':
-        return <SettingsPanel />;
+        return <SettingsPanelMui />;
       default:
         return <ChatPanel />;
     }
@@ -32,13 +32,13 @@ const ChatAppPage = () => {
 
   return (
     <>
-      <Layout
+      <LayoutMui
         activeView={activeView}
         onViewChange={setActiveView}
         notificationCount={5}
       >
         {renderMainContent()}
-      </Layout>
+      </LayoutMui>
       
       {/* Socket Debug Panel - Remove in production */}
       {/* <SocketDebugPanel /> */}

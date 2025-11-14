@@ -306,7 +306,11 @@ export interface ResetUnreadCountSuccessResponse {
   message: string;
   data: Conversation;
 }
-
+// Conversation Updated Response
+export interface ConversationUpdatedResponse {
+  conversationId: string;
+  updates: Partial<Conversation>;
+}
 // Error Response
 export interface MessageErrorResponse {
   success: false;

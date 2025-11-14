@@ -1,11 +1,7 @@
-import { SigninForm } from "@/components/login-form";
+import { SigninFormMui } from "@/components/login-form-mui";
 
 const SignInPage = () => {
-  return (
-    <div className="w-full h-screen">
-      <SigninForm />
-    </div>
-  );
+  return <SigninFormMui />;
 };
 
 export default SignInPage;

@@ -324,14 +324,11 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
         // 🛡️ Tránh setup duplicate listeners
         if (get()._listenersSetup) {
-            console.log('⚠️ Các listener Socket đã được thiết lập trước đó, bỏ qua...');
+            console.log('⚠️ Friend listeners đã được setup, bỏ qua...');
             return;
         }
 
-        // 🧹 Cleanup existing friend listeners trước khi setup mới để tránh duplicate
-        get().removeSocketListeners();
-
-        console.log('🔧 Đang thiết lập các listener Socket liên quan đến bạn bè...');
+        console.log('🔧 Đang thiết lập friend Socket listeners...');
 
         // Lắng nghe friend request mới
         socketService.onFriendRequestReceived((data) => {
