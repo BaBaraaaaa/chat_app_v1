@@ -83,11 +83,11 @@ export function NewChatDialogMui({
 
   return (
     <Dialog open={open} onClose={() => onOpenChange(false)} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Typography variant="h6" fontWeight={600}>
+      <DialogTitle component="div">
+        <Typography component="h6" fontWeight={600}>
           Bắt đầu cuộc trò chuyện mới
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        <Typography component="h6" variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           Chọn bạn bè để bắt đầu trò chuyện 
         </Typography>
       </DialogTitle>
