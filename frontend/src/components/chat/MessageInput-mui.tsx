@@ -134,6 +134,9 @@ export default function MessageInputMui({
           bgcolor: 'background.paper',
           borderTop: 1,
           borderColor: 'divider',
+          display: 'flex',
+          gap: 1,
+          alignItems: 'center',
         }}
       >
         <TextField
@@ -146,14 +149,16 @@ export default function MessageInputMui({
           onKeyPress={handleKeyPress}
           disabled={disabled}
           sx={{
+            
             '& .MuiInputBase-root': {
-              alignItems: 'flex-end',
+              alignItems: 'center',
             },
             '& .MuiInputBase-input': {
               maxHeight: '150px',
               overflowY: 'auto !important',
             }
           }}
+          
           InputProps={{
             startAdornment: (
               <InputAdornment position="start" sx={{ alignSelf: 'flex-end', mb: 1 }}>
