@@ -77,12 +77,22 @@ export const registerMessageHandler = (
         console.log(`📢 Broadcasting NEW_MESSAGE to room: ${roomName}`);
         console.log(`👥 Clients in room:`, io.sockets.adapter.rooms.get(roomName)?.size || 0);
         
-        // ✅ Broadcast NEW_MESSAGE cho TẤT CẢ clients trong conversation
-        // Bao gồm cả người gửi để cập nhật UI của họ
+        // ✅ Broadcast NEW_MESSAGE cho TẤT CẢ clients trong conversation room
         io.to(roomName).emit("NEW_MESSAGE", {
           message: result.data,
           conversationId
         });
+
+        // ✅ Đảm bảo receiver nhận được message ngay cả khi chưa join room
+        // (Trường hợp conversation mới tạo, receiver chưa có trong list nên chưa join room)
+        const receiver = onlineUsers.find(u => u.userId === receiverId);
+        if (receiver && receiver.socketId !== socket.id) {
+          console.log(`📤 Sending NEW_MESSAGE directly to receiver: ${receiverId}`);
+          io.to(receiver.socketId).emit("NEW_MESSAGE", {
+            message: result.data,
+            conversationId
+          });
+        }
 
         // ✅ Xác nhận riêng cho người gửi
         socket.emit("MESSAGE_SENT", {
