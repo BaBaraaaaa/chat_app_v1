@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box } from "@mui/material";
-import ChatSidebarMui from "./ChatSidebar-mui";
+import ConversationListMui from "./ConversationList-mui";
 import ChatAreaMui from "./ChatArea-mui";
 import { NewChatDialogMui } from "./NewChatDialog-mui";
 import { useConversationStore } from "@/stores/useConversationStore";
@@ -10,34 +10,22 @@ import { useSocketStore } from "@/stores/useSocketStore";
 import { useFriendStore } from "@/stores/useFriendStore";
 import type { Conversation } from "@/types/message";
 import type { Contact } from "../../types/chat";
-import { formatTimestamp } from "@/utils/helper";
 import { conversationService } from "@/services/conversationService";
 
 const ChatPanel = () => {
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [newChatOpen, setNewChatOpen] = useState(false);
 
   const { user } = useAuthStore();
   const { isConnected, onlineUsers } = useSocketStore();
   const { friends, getFriendsList, loading: friendsLoading } = useFriendStore();
-  const conversations = useConversationStore((state) => state.conversations);
-  const getConversations = useConversationStore(
-    (state) => state.getConversations
-  );
-  const searchConversations = useConversationStore(
-    (state) => state.searchConversations
-  );
-  const clearSearchResults = useConversationStore(
-    (state) => state.clearSearchResults
-  );
-  const setCurrentConversation = useConversationStore(
-    (state) => state.setCurrentConversation
-  );
-  const _updateConversation = useConversationStore(
-    (state) => state._updateConversation
-  );
+  const {
+    conversations,
+    getConversations,
+    setCurrentConversation,
+    _updateConversation,
+  } = useConversationStore();
   const {
     messages,
     sendMessage,
@@ -45,6 +33,16 @@ const ChatPanel = () => {
     joinConversation,
     leaveConversation,
   } = useMessageStore();
+
+  // ✅ Load conversations và friends khi component mount
+  useEffect(() => {
+    if (isConnected && user) {
+      getConversations();
+      getFriendsList();
+    }
+  }, [isConnected, user, getConversations, getFriendsList]);
+
+
 
   // ✅ Load conversations và friends khi connected
   useEffect(() => {
@@ -159,7 +157,9 @@ const ChatPanel = () => {
   // ✅ Detect khi conversation đang xem bị xóa (user unfriend)
   useEffect(() => {
     if (selectedConversation) {
-      const stillExists = conversations.find(c => c._id === selectedConversation._id);
+      const stillExists = conversations.find(
+        (c) => c._id === selectedConversation._id
+      );
       if (!stillExists) {
         console.log("🔴 Conversation đã bị xóa, clear selection");
         setSelectedConversation(null);
@@ -168,41 +168,13 @@ const ChatPanel = () => {
     }
   }, [conversations, selectedConversation]);
 
-  // Convert Conversation to Contact format cho UI
-  const contacts = useMemo((): Contact[] => {
-    return conversations
-      .filter(conv => conv.isActive) // ✅ Chỉ hiển thị conversation active
-      .map((conv) => {
-        const otherUser = conv.participants.find((p) => p._id !== user?._id);
-        if (!otherUser) return null;
-
-        // ✅ Check if other user is online
-        const isOnline = onlineUsers.includes(otherUser._id);
-
-        return {
-          id: conv._id,
-          name: otherUser.displayName || otherUser.username,
-          avatar: otherUser.avatar,
-          lastMessage: conv.lastMessage?.content || "Bắt đầu cuộc trò chuyện",
-          timestamp: conv.lastMessage
-            ? formatTimestamp(conv.lastMessage.sentAt)
-            : "",
-          isOnline,
-          unreadCount: conv.unreadCount || 0,
-        };
-      })
-      .filter(Boolean) as Contact[];
-  }, [conversations, onlineUsers, user]);
-
-  const handleContactSelect = (contact: Contact) => {
-    const conversation = conversations.find((c) => c._id === contact.id);
-    if (conversation) {
-      setSelectedConversation(conversation);
-      setCurrentConversation(conversation); // Set to store
-    }
+  const handleConversationSelect = (conversation: Conversation) => {
+    setSelectedConversation(conversation);
+    setCurrentConversation(conversation); // Set to store
   };
 
   const handleSendMessage = (content: string) => {
+    console.log("🔵 ChatPanel handleSendMessage called:", { content, hasConversation: !!selectedConversation });
     if (content.trim() && selectedConversation) {
       console.log("📤 Sending message:", content);
 
@@ -210,46 +182,32 @@ const ChatPanel = () => {
       const receiver = selectedConversation.participants.find(
         (p) => p._id !== user?._id
       );
-      if (!receiver) return;
+      if (!receiver) {
+        console.error("❌ No receiver found in conversation");
+        return;
+      }
 
-      sendMessage({
+      console.log("✅ Receiver found:", receiver._id);
+      const payload = {
         conversationId: selectedConversation._id,
         receiverId: receiver._id,
         content: content,
-        type: "text",
-      });
-    }
-  };
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim()) {
-      searchConversations(query);
+        type: "text" as const,
+      };
+      console.log("📦 Message payload:", payload);
+      sendMessage(payload);
     } else {
-      clearSearchResults();
+      console.log("❌ Send blocked:", { hasContent: !!content.trim(), hasConversation: !!selectedConversation });
     }
   };
 
-  const selectedContact = selectedConversation
-    ? contacts.find((c) => c.id === selectedConversation._id) || null
-    : null;
-
-  // Convert Message[] từ backend sang format UI
+  // Convert Message[] từ backend - giữ nguyên format từ store
   const uiMessages = useMemo(() => {
     if (!selectedConversation) return [];
 
     const backendMessages = messages[selectedConversation._id] || [];
-    return backendMessages.map((msg) => ({
-      id: msg._id,
-      content: msg.content,
-      sender: msg.senderId.displayName || msg.senderId.username,
-      timestamp: new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      isOwn: msg.senderId._id === user?._id,
-    }));
-  }, [messages, selectedConversation, user]);
+    return backendMessages; // Truyền trực tiếp, không cần convert
+  }, [messages, selectedConversation]);
 
   // ✅ Check xem conversation partner có phải bạn bè không
   const isFriend = useMemo(() => {
@@ -294,16 +252,45 @@ const ChatPanel = () => {
     }, 1000);
   };
 
+  // Convert to Contact for ChatAreaMui compatibility
+  const selectedContact = useMemo((): Contact | null => {
+    if (!selectedConversation) return null;
+
+    const otherUser = selectedConversation.participants.find(
+      (p) => p._id !== user?._id
+    );
+    if (!otherUser) return null;
+
+    const isOnline = onlineUsers.includes(otherUser._id);
+
+    return {
+      id: selectedConversation._id,
+      name: otherUser.displayName || otherUser.username,
+      avatar: otherUser.avatar,
+      lastMessage:
+        selectedConversation.lastMessage?.content || "Bắt đầu cuộc trò chuyện",
+      timestamp: selectedConversation.lastMessage
+        ? new Date(selectedConversation.lastMessage.sentAt).toLocaleTimeString(
+            "vi-VN",
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          )
+        : "",
+      isOnline,
+      unreadCount: selectedConversation.unreadCount || 0,
+    };
+  }, [selectedConversation, user, onlineUsers]);
+
   return (
     <>
       {/* Chat Panel */}
-      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%' }}>
-        <ChatSidebarMui
-          contacts={contacts}
-          selectedContact={selectedContact}
-          onContactSelect={handleContactSelect}
-          searchQuery={searchQuery}
-          onSearchChange={handleSearchChange}
+      <Box
+        sx={{ display: "flex", flex: 1, overflow: "hidden", height: "100%" }}
+      >
+        <ConversationListMui
+          onSelectConversation={handleConversationSelect}
           onNewChat={handleNewChat}
         />
         <ChatAreaMui

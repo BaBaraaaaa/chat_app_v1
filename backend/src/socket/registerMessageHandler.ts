@@ -32,9 +32,12 @@ export const registerMessageHandler = (
     attachments?: any[];
     replyTo?: string;
   }) => {
+    console.log(`🔵 SEND_MESSAGE received from socket ${socket.id}:`, data);
     try {
       const senderId = socket.data.userId;
+      console.log(`🔵 Sender ID: ${senderId}`);
       if (!senderId) {
+        console.error("❌ No userId in socket.data");
         socket.emit("MESSAGE_ERROR", {
           success: false,
           message: "Người dùng chưa được xác thực."

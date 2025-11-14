@@ -1,3 +1,4 @@
+import { Box, CircularProgress } from '@mui/material';
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthInit } from "@/hooks/useAuthInit";
@@ -8,9 +9,16 @@ const ProtectedRouter = () => {
 
   if (loading || !isInitialized) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
     );
   }
 

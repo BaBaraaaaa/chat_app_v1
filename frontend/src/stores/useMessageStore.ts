@@ -66,10 +66,13 @@ export const useMessageStore = create<MessageState>((set, get) => ({
      * Gửi tin nhắn
      */
     sendMessage: (payload: SendMessagePayload) => {
+        console.log("🔵 useMessageStore.sendMessage called with payload:", payload);
         if (!messageService.isConnected()) {
+            console.error("❌ Socket not connected!");
             toast.error("Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối.");
             return;
         }
+        console.log("✅ Socket connected, calling messageService.sendMessage");
         messageService.sendMessage(payload);
     },
 
@@ -219,6 +222,14 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 
                 const conversation = conversationStore.conversations.find(c => c._id === data.conversationId);
                 
+                // ✅ Nếu conversation chưa có trong list (conversation mới tạo chưa có message)
+                // → Fetch lại conversations để lấy conversation này
+                if (!conversation) {
+                    console.log("⚠️ Conversation not found in list, fetching...");
+                    conversationStore.getConversations();
+                    return;
+                }
+                
                 const isFromOtherUser = data.message.senderId._id !== currentUserId;
                 const isViewingConversation = currentConversation?._id === data.conversationId;
                 
@@ -267,9 +278,13 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             if (data.success && data.data) {
                 const conversationId = data.data.messages[0]?.conversationId;
                 if (conversationId) {
+                    // Filter out deleted messages
+                    const activeMessages = data.data.messages.filter(msg => !msg.isDeleted);
+                    console.log(`🔍 Filtered ${data.data.messages.length - activeMessages.length} deleted messages`);
+                    
                     get()._setMessages(
                         conversationId,
-                        data.data.messages,
+                        activeMessages,
                         data.data.total,
                         data.data.hasMore
                     );
@@ -425,11 +440,44 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     _removeMessage: (messageId: string) => {
         set(state => {
             const newMessages = { ...state.messages };
+            let deletedFromConversationId: string | null = null;
+            
             for (const conversationId in newMessages) {
+                const originalLength = newMessages[conversationId].length;
                 newMessages[conversationId] = newMessages[conversationId].filter(
                     m => m._id !== messageId
                 );
+                
+                // Track which conversation this message was deleted from
+                if (newMessages[conversationId].length !== originalLength) {
+                    deletedFromConversationId = conversationId;
+                }
             }
+            
+            // Update lastMessage in conversation if needed
+            if (deletedFromConversationId) {
+                const remainingMessages = newMessages[deletedFromConversationId];
+                const conversationStore = useConversationStore.getState();
+                
+                if (remainingMessages.length === 0) {
+                    // No messages left - set lastMessage to undefined
+                    conversationStore._updateConversation(deletedFromConversationId, {
+                        lastMessage: undefined
+                    });
+                } else {
+                    // Get the last remaining message
+                    const lastMessage = remainingMessages[remainingMessages.length - 1];
+                    conversationStore._updateConversation(deletedFromConversationId, {
+                        lastMessage: {
+                            content: lastMessage.content,
+                            senderId: lastMessage.senderId,
+                            sentAt: lastMessage.createdAt,
+                            type: lastMessage.type || 'text',
+                        }
+                    });
+                }
+            }
+            
             return { messages: newMessages };
         });
     },
