@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Box } from "@mui/material";
 import ConversationListMui from "./ConversationList-mui";
 import ChatAreaMui from "./ChatArea-mui";
@@ -16,6 +16,7 @@ const ChatPanel = () => {
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const joinedConversationsRef = useRef<Set<string>>(new Set());
 
   const { user } = useAuthStore();
   const { isConnected, onlineUsers } = useSocketStore();
@@ -31,18 +32,7 @@ const ChatPanel = () => {
     sendMessage,
     getMessages,
     joinConversation,
-    leaveConversation,
   } = useMessageStore();
-
-  // ✅ Load conversations và friends khi component mount
-  useEffect(() => {
-    if (isConnected && user) {
-      getConversations();
-      getFriendsList();
-    }
-  }, [isConnected, user, getConversations, getFriendsList]);
-
-
 
   // ✅ Load conversations và friends khi connected
   useEffect(() => {
@@ -51,24 +41,30 @@ const ChatPanel = () => {
       getConversations();
       getFriendsList(); // ✅ Load friends list để check friendship
     }
-  }, [isConnected, user]);
+  }, [isConnected, user, getConversations, getFriendsList]);
 
   // ✅ Join TẤT CẢ conversation rooms khi có conversations
   useEffect(() => {
     if (conversations.length > 0 && isConnected) {
-      console.log("🔗 Joining ALL conversation rooms:", conversations.length);
       conversations.forEach((conv) => {
-        joinConversation(conv._id);
-        console.log("✅ Joined room for conversation:", conv._id);
+        // Chỉ join nếu chưa join trước đó
+        if (!joinedConversationsRef.current.has(conv._id)) {
+          joinConversation(conv._id);
+          joinedConversationsRef.current.add(conv._id);
+          console.log("✅ Joined room for conversation:", conv._id);
+        }
       });
     }
-  }, [conversations, isConnected]); // ✅ Theo dõi conversations array, không chỉ length
+  }, [conversations, isConnected, joinConversation]);
 
   // Load messages khi chọn conversation
   useEffect(() => {
     if (selectedConversation && isConnected) {
-      // ✅ Join conversation room để nhận real-time updates
-      joinConversation(selectedConversation._id);
+      // ✅ Join conversation room nếu chưa join (đảm bảo nhận real-time updates)
+      if (!joinedConversationsRef.current.has(selectedConversation._id)) {
+        joinConversation(selectedConversation._id);
+        joinedConversationsRef.current.add(selectedConversation._id);
+      }
 
       getMessages(selectedConversation._id);
 
@@ -85,18 +81,8 @@ const ChatPanel = () => {
           conversationId: selectedConversation._id,
         });
       }
-      // ✅ Leave room khi unmount hoặc chuyển conversation
-      return () => {
-        leaveConversation(selectedConversation._id);
-      };
     }
-  }, [
-    selectedConversation?._id,
-    isConnected,
-    joinConversation,
-    getMessages,
-    leaveConversation,
-  ]);
+  }, [selectedConversation?._id, isConnected, joinConversation, getMessages, _updateConversation]);
   // Tự động đánh dấu đã đọc khi có tin nhắn mới đến TRONG conversation đang mở
   useEffect(() => {
     if (!selectedConversation || !isConnected) {
