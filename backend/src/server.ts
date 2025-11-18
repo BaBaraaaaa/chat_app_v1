@@ -12,7 +12,7 @@ import cors from 'cors';
 import friendRequestRoute from './routes/friendsRoute';
 import { registerSocketHandlers } from './socket/registerSocketHandlers';
 import { socketAuthMiddleware } from './middleware/socketAuthMiddleware';
-
+import conversationRoute from './routes/conversationsRoute';
 // Cấu hình dotenv để sử dụng biến môi trường từ file .env
 dotenv.config();
 
@@ -73,6 +73,7 @@ if (process.env.NODE_ENV !== 'production') {
 //private route (authMiddleware đã được áp dụng trong từng route file)
 app.use('/api/user', userRoute);
 app.use("/api/friends", friendRequestRoute);
+app.use("/api/conversations", conversationRoute);
 
 // Đăng ký socket handlers
 registerSocketHandlers(io);

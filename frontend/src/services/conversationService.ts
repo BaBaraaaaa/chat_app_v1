@@ -1,28 +1,18 @@
 /**
- * Conversation Service - Socket.IO operations for conversations
- * Handles real-time conversation management with backend
+ * Conversation Socket Service - Real-time events only
+ * Handles live conversation updates, typing indicators, notifications
+ * 
+ * NOTE: For data loading (CRUD operations), use conversationApiService.ts
  */
 
 import { socketService } from './socketService';
 import type {
-  GetOrCreateConversationPayload,
-  ConversationCreatedResponse,
-  ConversationsListResponse,
-  GetConversationDetailPayload,
-  ConversationDetailResponse,
-  SearchConversationsPayload,
-  SearchConversationsResultResponse,
-  DeleteConversationPayload,
-  DeleteConversationSuccessResponse,
-  TotalUnreadCountResponse,
-  ResetUnreadCountPayload,
-  ResetUnreadCountSuccessResponse,
+  ConversationUpdatedResponse,
   ConversationErrorResponse,
-  SocketEventCallback,
-  ConversationUpdatedResponse
+  SocketEventCallback
 } from '@/types/message';
 
-class ConversationService {
+class ConversationSocketService {
   // ==================== UTILITY METHODS ====================
 
   /**
@@ -32,221 +22,139 @@ class ConversationService {
     return socketService.isConnected();
   }
 
-  // ==================== EMIT METHODS (Client → Server) ====================
+  // ==================== REAL-TIME EMIT METHODS ====================
 
   /**
-   * Tạo hoặc lấy conversation với user khác
+   * Join conversation room for real-time updates
    */
-  getOrCreateConversation(payload: GetOrCreateConversationPayload): void {
+  joinConversationRoom(conversationId: string): void {
     if (socketService.isConnected()) {
-      socketService.emit('GET_OR_CREATE_CONVERSATION', payload);
-      console.log('📤 Tạo/lấy conversation với user:', payload.otherUserId);
+      socketService.emit('JOIN_CONVERSATION_ROOM', { conversationId });
+      console.log('🏠 Joined conversation room:', conversationId);
     } else {
-      console.warn('⚠️ Socket chưa kết nối, không thể tạo conversation');
+      console.warn('⚠️ Socket chưa kết nối, không thể join room');
     }
   }
 
   /**
-   * Lấy danh sách conversations
+   * Leave conversation room
    */
-  getConversations(): void {
+  leaveConversationRoom(conversationId: string): void {
     if (socketService.isConnected()) {
-      socketService.emit('GET_CONVERSATIONS');
-      console.log('📤 Đang lấy danh sách conversations');
-    } else {
-      console.warn('⚠️ Socket chưa kết nối, không thể lấy conversations');
-    }
-  }
-
-  /**
-   * Lấy chi tiết conversation
-   */
-  getConversationDetail(payload: GetConversationDetailPayload): void {
-    if (socketService.isConnected()) {
-      socketService.emit('GET_CONVERSATION_DETAIL', payload);
-      console.log('📤 Lấy chi tiết conversation:', payload.conversationId);
+      socketService.emit('LEAVE_CONVERSATION_ROOM', { conversationId });
+      console.log('� Left conversation room:', conversationId);
     } else {
       console.warn('⚠️ Socket chưa kết nối');
     }
   }
 
   /**
-   * Tìm kiếm conversations
+   * Send typing status (real-time)
    */
-  searchConversations(payload: SearchConversationsPayload): void {
+  sendTypingStatus(conversationId: string, isTyping: boolean): void {
     if (socketService.isConnected()) {
-      socketService.emit('SEARCH_CONVERSATIONS', payload);
-      console.log('📤 Tìm kiếm conversations:', payload.query);
-    } else {
-      console.warn('⚠️ Socket chưa kết nối');
+      socketService.emit('TYPING_STATUS', { conversationId, isTyping });
     }
   }
 
   /**
-   * Xóa conversation
+   * Mark conversation as read (real-time notification)
    */
-  deleteConversation(payload: DeleteConversationPayload): void {
+  markAsReadRealtime(conversationId: string): void {
     if (socketService.isConnected()) {
-      socketService.emit('DELETE_CONVERSATION', payload);
-      console.log('📤 Xóa conversation:', payload.conversationId);
-    } else {
-      console.warn('⚠️ Socket chưa kết nối');
+      socketService.emit('MARK_CONVERSATION_READ', { conversationId });
+      console.log('📖 Marked conversation as read (real-time):', conversationId);
     }
   }
 
-  /**
-   * Lấy tổng số tin nhắn chưa đọc
-   */
-  getTotalUnreadCount(): void {
-    if (socketService.isConnected()) {
-      socketService.emit('GET_TOTAL_UNREAD_COUNT');
-      console.log('📤 Lấy tổng unread count');
-    } else {
-      console.warn('⚠️ Socket chưa kết nối');
-    }
-  }
+  // ==================== REAL-TIME LISTENERS ====================
 
   /**
-   * Reset unread count
-   */
-  resetUnreadCount(payload: ResetUnreadCountPayload): void {
-    if (socketService.isConnected()) {
-      socketService.emit('RESET_UNREAD_COUNT', payload);
-      console.log('📤 Reset unread count:', payload.conversationId);
-    } else {
-      console.warn('⚠️ Socket chưa kết nối');
-    }
-  }
-
-  // ==================== LISTENER METHODS (Server → Client) ====================
-
-  /**
-   * Listen for conversation created/retrieved
-   */
-  onConversationCreated(callback: SocketEventCallback<ConversationCreatedResponse>): void {
-    socketService.on('CONVERSATION_CREATED', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for conversations list
-   */
-  onConversationsList(callback: SocketEventCallback<ConversationsListResponse>): void {
-    socketService.on('CONVERSATIONS_LIST', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for conversation detail
-   */
-  onConversationDetail(callback: SocketEventCallback<ConversationDetailResponse>): void {
-    socketService.on('CONVERSATION_DETAIL', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for search results
-   */
-  onSearchConversationsResult(callback: SocketEventCallback<SearchConversationsResultResponse>): void {
-    socketService.on('SEARCH_CONVERSATIONS_RESULT', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for delete conversation success
-   */
-  onDeleteConversationSuccess(callback: SocketEventCallback<DeleteConversationSuccessResponse>): void {
-    socketService.on('DELETE_CONVERSATION_SUCCESS', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for total unread count
-   */
-  onTotalUnreadCount(callback: SocketEventCallback<TotalUnreadCountResponse>): void {
-    socketService.on('TOTAL_UNREAD_COUNT', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for reset unread count success
-   */
-  onResetUnreadCountSuccess(callback: SocketEventCallback<ResetUnreadCountSuccessResponse>): void {
-    socketService.on('RESET_UNREAD_COUNT_SUCCESS', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for conversation updated (e.g., lastMessage changed)
+   * Listen for conversation updated (real-time)
    */
   onConversationUpdated(callback: SocketEventCallback<ConversationUpdatedResponse>): void {
     socketService.on('CONVERSATION_UPDATED', callback as (...args: unknown[]) => void);
   }
 
   /**
-   * Listen for conversation error
+   * Listen for new conversation notification (real-time)
+   */
+  onNewConversationNotification(callback: SocketEventCallback<unknown>): void {
+    socketService.on('NEW_CONVERSATION_NOTIFICATION', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for conversation deleted (real-time)
+   */
+  onConversationDeleted(callback: SocketEventCallback<unknown>): void {
+    socketService.on('CONVERSATION_DELETED_NOTIFICATION', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for user typing in conversation
+   */
+  onUserTyping(callback: SocketEventCallback<unknown>): void {
+    socketService.on('USER_TYPING', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for user stopped typing
+   */
+  onUserStoppedTyping(callback: SocketEventCallback<unknown>): void {
+    socketService.on('USER_STOPPED_TYPING', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for unread count changed (real-time)
+   */
+  onUnreadCountChanged(callback: SocketEventCallback<unknown>): void {
+    socketService.on('UNREAD_COUNT_CHANGED', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for conversation member joined
+   */
+  onMemberJoined(callback: SocketEventCallback<unknown>): void {
+    socketService.on('MEMBER_JOINED_CONVERSATION', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for conversation member left
+   */
+  onMemberLeft(callback: SocketEventCallback<unknown>): void {
+    socketService.on('MEMBER_LEFT_CONVERSATION', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for conversation errors (real-time)
    */
   onConversationError(callback: SocketEventCallback<ConversationErrorResponse>): void {
     socketService.on('CONVERSATION_ERROR', callback as (...args: unknown[]) => void);
   }
 
-  /**
-   * Listen for conversations error
-   */
-  onConversationsError(callback: SocketEventCallback<ConversationErrorResponse>): void {
-    socketService.on('CONVERSATIONS_ERROR', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for conversation detail error
-   */
-  onConversationDetailError(callback: SocketEventCallback<ConversationErrorResponse>): void {
-    socketService.on('CONVERSATION_DETAIL_ERROR', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for search error
-   */
-  onSearchConversationsError(callback: SocketEventCallback<ConversationErrorResponse>): void {
-    socketService.on('SEARCH_CONVERSATIONS_ERROR', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for delete conversation error
-   */
-  onDeleteConversationError(callback: SocketEventCallback<ConversationErrorResponse>): void {
-    socketService.on('DELETE_CONVERSATION_ERROR', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for total unread count error
-   */
-  onTotalUnreadCountError(callback: SocketEventCallback<ConversationErrorResponse>): void {
-    socketService.on('TOTAL_UNREAD_COUNT_ERROR', callback as (...args: unknown[]) => void);
-  }
-
-  /**
-   * Listen for reset unread count error
-   */
-  onResetUnreadCountError(callback: SocketEventCallback<ConversationErrorResponse>): void {
-    socketService.on('RESET_UNREAD_COUNT_ERROR', callback as (...args: unknown[]) => void);
-  }
-
   // ==================== CLEANUP METHODS ====================
 
   /**
-   * Remove all conversation listeners
+   * Remove all real-time conversation listeners
    */
   removeAllListeners(): void {
-    socketService.removeListener('CONVERSATION_CREATED');
-    socketService.removeListener('CONVERSATIONS_LIST');
-    socketService.removeListener('CONVERSATION_DETAIL');
-    socketService.removeListener('SEARCH_CONVERSATIONS_RESULT');
-    socketService.removeListener('DELETE_CONVERSATION_SUCCESS');
-    socketService.removeListener('TOTAL_UNREAD_COUNT');
-    socketService.removeListener('RESET_UNREAD_COUNT_SUCCESS');
-    socketService.removeListener('CONVERSATION_UPDATED');
-    socketService.removeListener('CONVERSATION_ERROR');
-    socketService.removeListener('CONVERSATIONS_ERROR');
-    socketService.removeListener('CONVERSATION_DETAIL_ERROR');
-    socketService.removeListener('SEARCH_CONVERSATIONS_ERROR');
-    socketService.removeListener('DELETE_CONVERSATION_ERROR');
-    socketService.removeListener('TOTAL_UNREAD_COUNT_ERROR');
-    socketService.removeListener('RESET_UNREAD_COUNT_ERROR');
-    console.log('🧹 Đã xóa tất cả conversation listeners');
+    const realTimeEvents = [
+      'CONVERSATION_UPDATED',
+      'NEW_CONVERSATION_NOTIFICATION', 
+      'CONVERSATION_DELETED_NOTIFICATION',
+      'USER_TYPING',
+      'USER_STOPPED_TYPING',
+      'UNREAD_COUNT_CHANGED',
+      'MEMBER_JOINED_CONVERSATION',
+      'MEMBER_LEFT_CONVERSATION',
+      'CONVERSATION_ERROR'
+    ];
+
+    realTimeEvents.forEach(event => {
+      socketService.removeListener(event);
+    });
+
+    console.log('🧹 Removed all real-time conversation listeners');
   }
 
   /**
@@ -258,5 +166,5 @@ class ConversationService {
 }
 
 // Export singleton instance
-export const conversationService = new ConversationService();
+export const conversationService = new ConversationSocketService();
 export default conversationService;

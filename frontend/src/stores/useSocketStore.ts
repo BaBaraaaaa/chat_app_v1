@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 import { socketService } from '@/services/socketService';
-import type { 
-  FriendRequest, 
-  User,
-  OnlineUsersListData
-} from '@/types/socket';
+import type { OnlineUsersListData } from '@/types/socket';
 
 interface SocketState {
   // Connection state
@@ -16,46 +12,19 @@ interface SocketState {
   onlineUsers: string[];
   onlineCount: number;
   
-  // Real-time notifications
-  notifications: Notification[];
-  unreadCount: number;
-  
-  // Internal flag to prevent duplicate listener setup
+  // Internal flags
   _coreListenersSetup: boolean;
-  
-  // Internal flag to prevent duplicate user registration
   _userRegistered: boolean;
   
-  // Actions
+  // Core actions
   connect: (token?: string) => Promise<boolean>;
   disconnect: () => void;
   registerUser: (userId: string) => void;
-  setupEventListeners: () => void;
-  removeEventListeners: () => void;
-  
-  // Friend request actions via socket
-  sendFriendRequestSocket: (toUserId: string, fromUserId: string, message?: string) => void;
-  respondToFriendRequestSocket: (requestId: string, response: "accepted" | "declined", userId: string) => void;
-  cancelFriendRequestSocket: (requestId: string, userId: string) => void;
-  
-  // Notification management
-  addNotification: (notification: Notification) => void;
-  removeNotification: (id: string) => void;
-  clearNotifications: () => void;
-  markAsRead: () => void;
+  setupCoreListeners: () => void;
+  removeCoreListeners: () => void;
   
   // Online users management
   updateOnlineUsers: (users: string[], count: number) => void;
-}
-
-interface Notification {
-  id: string;
-  type: 'friend_request' | 'friend_accepted' | 'friend_declined' | 'friend_cancelled';
-  title: string;
-  message: string;
-  data?: FriendRequest | User;
-  timestamp: Date;
-  read: boolean;
 }
 
 export const useSocketStore = create<SocketState>((set, get) => ({
@@ -65,8 +34,6 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   connectionError: null,
   onlineUsers: [],
   onlineCount: 0,
-  notifications: [],
-  unreadCount: 0,
   _coreListenersSetup: false,
   _userRegistered: false,
 
@@ -83,8 +50,8 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         connectionError: null 
       });
       
-      // Setup event listeners after successful connection
-      get().setupEventListeners();
+      // Setup core listeners after successful connection
+      get().setupCoreListeners();
       
       return true;
     } catch (error) {
@@ -100,7 +67,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   },
 
   disconnect: () => {
-    get().removeEventListeners();
+    get().removeCoreListeners();
     socketService.disconnect();
     set({ 
       isConnected: false, 
@@ -108,14 +75,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       connectionError: null,
       onlineUsers: [],
       onlineCount: 0,
-      _userRegistered: false // ✅ Reset registration flag
+      _userRegistered: false
     });
   },
 
   registerUser: (userId: string) => {
     const state = get();
     
-    // ✅ Prevent duplicate registration
+    // Prevent duplicate registration
     if (state._userRegistered) {
       console.log('⚠️ User already registered in store, skipping...');
       return;
@@ -125,8 +92,8 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     set({ _userRegistered: true });
   },
 
-  // === EVENT LISTENERS SETUP ===
-  setupEventListeners: () => {
+  // === CORE EVENT LISTENERS SETUP ===
+  setupCoreListeners: () => {
     const state = get();
     
     // Prevent duplicate setup
@@ -135,7 +102,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       return;
     }
 
-    // === CORE CONNECTION LISTENERS ONLY ===
+    console.log('🔧 Setting up core Socket listeners...');
     
     // Online users list - Core connection feature
     socketService.onOnlineUsersList((data: OnlineUsersListData) => {
@@ -149,66 +116,16 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     // Request initial online users list
     socketService.getOnlineUsers();
     
+    console.log('✅ Core Socket listeners setup complete');
   },
 
-  removeEventListeners: () => {
+  removeCoreListeners: () => {
     console.log('🧹 Removing core Socket listeners...');
-    // Only remove specific listeners, not all
+    // Only remove core listeners
     socketService.removeListener('ONLINE_USERS_LIST');
     // Reset flag so listeners can be re-setup on reconnect
     set({ _coreListenersSetup: false });
     console.log('✅ Core Socket listeners removed');
-  },
-
-  // === SOCKET ACTIONS ===
-  sendFriendRequestSocket: (toUserId: string, fromUserId: string, message?: string) => {
-    socketService.sendFriendRequest({
-      fromUserId,
-      toUserId,
-      message
-    });
-  },
-
-  respondToFriendRequestSocket: (requestId: string, response: "accepted" | "declined") => {
-    socketService.respondToFriendRequest({
-      requestId,
-      response
-    });
-  },
-
-  cancelFriendRequestSocket: (requestId: string) => {
-    socketService.cancelFriendRequest(requestId);
-  },
-
-  // === NOTIFICATION MANAGEMENT ===
-  addNotification: (notification: Notification) => {
-    set(state => ({
-      notifications: [notification, ...state.notifications],
-      unreadCount: state.unreadCount + 1
-    }));
-  },
-
-  removeNotification: (id: string) => {
-    set(state => {
-      const notification = state.notifications.find(n => n.id === id);
-      const wasUnread = notification && !notification.read;
-      
-      return {
-        notifications: state.notifications.filter(n => n.id !== id),
-        unreadCount: wasUnread ? state.unreadCount - 1 : state.unreadCount
-      };
-    });
-  },
-
-  clearNotifications: () => {
-    set({ notifications: [], unreadCount: 0 });
-  },
-
-  markAsRead: () => {
-    set(state => ({
-      notifications: state.notifications.map(n => ({ ...n, read: true })),
-      unreadCount: 0
-    }));
   },
 
   // === ONLINE USERS MANAGEMENT ===

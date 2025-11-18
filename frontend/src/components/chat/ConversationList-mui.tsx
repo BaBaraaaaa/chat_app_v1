@@ -113,7 +113,7 @@ export default function ConversationListMui({
   // 1. Conversations có lastMessage (đã có tin nhắn)
   // 2. HOẶC là currentConversation (đang mở để gửi tin nhắn)
   const displayedConversations = (() => {
-    const baseList = searchQuery ? searchResults : conversations;
+    const baseList = searchQuery ? searchResults : conversations || [];
 
     return baseList.filter(
       (conv) =>

@@ -1,12 +1,18 @@
 /**
  * Conversation Store - Zustand State Management
- * Manages conversation state and Socket.IO listeners
+ * Manages conversation state with REST API and real-time Socket updates
  */
 
 import { create } from "zustand";
 import { toast } from "sonner";
-import { conversationService } from "@/services/conversationService";
-import type { Conversation } from "@/types/message";
+import { conversationService } from "@/services/conversationService"; // Real-time only
+import { conversationApiService } from "@/services/conversationApiService"; // REST API
+import type { 
+  Conversation,
+  ConversationUpdatedResponse,
+  ConversationErrorResponse,
+  UserTypingResponse
+} from "@/types/message";
 
 interface ConversationState {
   // State
@@ -18,13 +24,13 @@ interface ConversationState {
   _listenersSetup: boolean;
 
   // Actions
-  getOrCreateConversation: (otherUserId: string) => void;
-  getConversations: () => void;
-  getConversationDetail: (conversationId: string) => void;
-  searchConversations: (query: string) => void;
-  deleteConversation: (conversationId: string) => void;
-  getTotalUnreadCount: () => void;
-  resetUnreadCount: (conversationId: string) => void;
+  getOrCreateConversation: (otherUserId: string) => Promise<void>;
+  getConversations: () => Promise<void>;
+  getConversationDetail: (conversationId: string) => Promise<void>;
+  searchConversations: (query: string) => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
+  getTotalUnreadCount: () => Promise<void>;
+  resetUnreadCount: (conversationId: string) => Promise<void>;
   setCurrentConversation: (conversation: Conversation | null) => void;
   clearSearchResults: () => void;
 
@@ -50,86 +56,201 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   totalUnreadCount: 0,
   _listenersSetup: false,
 
-  // ==================== ACTIONS ====================
+  // ==================== ACTIONS (REST API) ====================
 
   /**
-   * Tạo hoặc lấy conversation
+   * Tạo hoặc lấy conversation (REST API)
    */
-  getOrCreateConversation: (otherUserId: string) => {
-    if (!conversationService.isConnected()) {
-      toast.error("Không thể tạo cuộc hội thoại. Vui lòng kiểm tra kết nối.");
-      return;
+  getOrCreateConversation: async (otherUserId: string) => {
+    try {
+      set({ loading: true });
+      const response = await conversationApiService.getOrCreateConversation(otherUserId);
+      
+      if (response.success && response.data) {
+        console.log('[data ]', response.data);
+        const conversation = response.data ;
+        
+        // Add to conversations list if not exists
+        const state = get();
+        const exists = state.conversations.find(c => c._id === conversation?._id);
+        if (!exists) {
+          set({ 
+            conversations: [conversation, ...state.conversations],
+            currentConversation: conversation
+          });
+        } else {
+          set({ currentConversation: conversation });
+        }
+        
+        // Join room for real-time updates
+        conversationService.joinConversationRoom(conversation._id);
+        
+        toast.success("Cuộc hội thoại đã sẵn sàng");
+      } else {
+        toast.error("Không thể tạo cuộc hội thoại");
+      }
+    } catch (error) {
+      console.error("Failed to create/get conversation:", error);
+      toast.error("Lỗi khi tạo cuộc hội thoại");
+    } finally {
+      set({ loading: false });
     }
-    set({ loading: true });
-    conversationService.getOrCreateConversation({ otherUserId });
   },
 
   /**
-   * Lấy danh sách conversations
+   * Lấy danh sách conversations (REST API)
    */
-  getConversations: () => {
-    if (!conversationService.isConnected()) {
-      console.warn("⚠️ Socket chưa kết nối, đợi kết nối để lấy conversations");
-      return;
+  getConversations: async () => {
+    try {
+      set({ loading: true });
+      const response = await conversationApiService.getConversations();
+      
+      if (response.success) {
+        set({ conversations: response.data });
+        console.log(`📋 Loaded ${response.data?.length} conversations`);
+      } else {
+        toast.error("Không thể tải danh sách cuộc hội thoại");
+      }
+    } catch (error) {
+      console.error("Failed to load conversations:", error);
+      toast.error("Lỗi khi tải danh sách cuộc hội thoại");
+    } finally {
+      set({ loading: false });
     }
-    set({ loading: true });
-    conversationService.getConversations();
   },
 
   /**
-   * Lấy chi tiết conversation
+   * Lấy chi tiết conversation (REST API)
    */
-  getConversationDetail: (conversationId: string) => {
-    if (!conversationService.isConnected()) {
-      console.warn("⚠️ Socket chưa kết nối");
-      return;
+  getConversationDetail: async (conversationId: string) => {
+    try {
+      set({ loading: true });
+      const response = await conversationApiService.getConversationDetail(conversationId);
+      
+      if (response.success) {
+        set({ currentConversation: response.data });
+        // Join room for real-time updates
+        conversationService.joinConversationRoom(conversationId);
+      } else {
+        toast.error("Không thể tải chi tiết cuộc hội thoại");
+      }
+    } catch (error) {
+      console.error("Failed to load conversation detail:", error);
+      toast.error("Lỗi khi tải chi tiết cuộc hội thoại");
+    } finally {
+      set({ loading: false });
     }
-    conversationService.getConversationDetail({ conversationId });
   },
 
   /**
-   * Tìm kiếm conversations
+   * Tìm kiếm conversations (REST API)
    */
-  searchConversations: (query: string) => {
-    if (!conversationService.isConnected()) {
-      toast.error("Không thể tìm kiếm. Vui lòng kiểm tra kết nối.");
-      return;
+  searchConversations: async (query: string) => {
+    try {
+      set({ loading: true });
+      const response = await conversationApiService.searchConversations(query);
+      
+      if (response.success) {
+        set({ searchResults: response.data });
+        console.log(`🔍 Found ${response.data?.length} conversations for "${query}"`);
+      } else {
+        set({ searchResults: [] });
+        toast.error("Không thể tìm kiếm cuộc hội thoại");
+      }
+    } catch (error) {
+      console.error("Failed to search conversations:", error);
+      set({ searchResults: [] });
+      toast.error("Lỗi khi tìm kiếm cuộc hội thoại");
+    } finally {
+      set({ loading: false });
     }
-    conversationService.searchConversations({ query });
   },
 
   /**
-   * Xóa conversation
+   * Xóa conversation (REST API)
    */
-  deleteConversation: (conversationId: string) => {
-    conversationService.deleteConversation({ conversationId });
-    // Optimistic update
-    get()._removeConversation(conversationId);
-  },
-
-  /**
-   * Lấy tổng số tin nhắn chưa đọc
-   */
-  getTotalUnreadCount: () => {
-    if (!conversationService.isConnected()) {
-      return;
+  deleteConversation: async (conversationId: string) => {
+    try {
+      // Optimistic update
+      get()._removeConversation(conversationId);
+      
+      const response = await conversationApiService.deleteConversation(conversationId);
+      
+      if (response.success) {
+        toast.success("Đã xóa cuộc hội thoại");
+        // Leave room
+        conversationService.leaveConversationRoom(conversationId);
+      } else {
+        // Revert optimistic update
+        console.error("Failed to delete conversation, need to reload");
+        await get().getConversations();
+        toast.error("Không thể xóa cuộc hội thoại");
+      }
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      // Revert optimistic update - reload data
+      await get().getConversations();
+      toast.error("Lỗi khi xóa cuộc hội thoại");
     }
-    conversationService.getTotalUnreadCount();
   },
 
   /**
-   * Reset unread count
+   * Lấy tổng số tin nhắn chưa đọc (REST API)
    */
-  resetUnreadCount: (conversationId: string) => {
-    conversationService.resetUnreadCount({ conversationId });
-    // Optimistic update
-    get()._updateConversation(conversationId, { unreadCount: 0 });
+  getTotalUnreadCount: async () => {
+    try {
+      const response = await conversationApiService.getTotalUnreadCount();
+      
+      if (response.success) {
+        set({ totalUnreadCount: response.data });
+      }
+    } catch (error) {
+      console.error("Failed to get total unread count:", error);
+    }
+  },
+
+  /**
+   * Reset unread count (REST API)
+   */
+  resetUnreadCount: async (conversationId: string) => {
+    try {
+      // Optimistic update
+      get()._updateConversation(conversationId, { unreadCount: 0 });
+      
+      const response = await conversationApiService.resetUnreadCount(conversationId);
+      if (response.success) {
+        // Also notify real-time
+        conversationService.markAsReadRealtime(conversationId);
+        // Refresh total unread count
+        await get().getTotalUnreadCount();
+      } else {
+        // Revert optimistic update - reload conversation
+        await get().getConversationDetail(conversationId);
+        toast.error("Không thể đánh dấu đã đọc");
+      }
+    } catch (error) {
+      console.error("Failed to reset unread count:", error);
+      // Revert optimistic update
+      await get().getConversationDetail(conversationId);
+      toast.error("Lỗi khi đánh dấu đã đọc");
+    }
   },
 
   /**
    * Set current conversation
    */
   setCurrentConversation: (conversation: Conversation | null) => {
+    // Leave previous room if any
+    const prevConversation = get().currentConversation;
+    if (prevConversation) {
+      conversationService.leaveConversationRoom(prevConversation._id);
+    }
+    
+    // Join new room if conversation exists
+    if (conversation) {
+      conversationService.joinConversationRoom(conversation._id);
+    }
+    
     set({ currentConversation: conversation });
   },
 
@@ -140,178 +261,142 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set({ searchResults: [] });
   },
 
-  // ==================== SOCKET LISTENERS ====================
+  // ==================== SOCKET LISTENERS (Real-time only) ====================
 
   /**
-   * Setup Socket listeners
+   * Setup real-time Socket listeners only
    */
   setupSocketListeners: () => {
     if (get()._listenersSetup) {
-      console.log("⚠️ Conversation listeners đã được setup, bỏ qua...");
+      console.log("⚠️ Real-time conversation listeners already setup, skipping...");
       return;
     }
 
-    console.log("🔧 Đang thiết lập conversation Socket listeners...");
+    console.log("🔧 Setting up real-time conversation Socket listeners...");
 
-    // Listen for conversation created
-    conversationService.onConversationCreated((data) => {
-      console.log("✅ Conversation created:", data);
-      if (data.success && data.data) {
-        // ✅ Luôn add vào list để có thể track
-        get()._addConversation(data.data);
-        // ✅ Set làm current conversation để có thể nhắn tin ngay
-        get().setCurrentConversation(data.data);
-        set({ loading: false });
-        console.log("📝 Conversation added to list and set as current");
-      } else {
-        set({ loading: false });
+    // Listen for conversation updates (real-time)
+    conversationService.onConversationUpdated((data: unknown) => {
+      const typedData = data as ConversationUpdatedResponse;
+      console.log("🔄 Conversation updated (real-time):", typedData);
+      if (typedData.conversationId && typedData.updates) {
+        get()._updateConversation(typedData.conversationId, typedData.updates);
       }
     });
 
-    // Listen for conversations list
-    conversationService.onConversationsList((data) => {
-      console.log("📬 Nhận danh sách conversations:", data);
-      if (data.success && data.data) {
-        // ✅ Lưu TẤT CẢ conversations vào store
-        // UI sẽ tự filter để chỉ hiển thị conversations có lastMessage hoặc là currentConversation
-        get()._setConversations(data.data);
-        set({ loading: false });
-        console.log(`📋 Loaded ${data.data.length} conversations into store`);
-      } else {
-        set({ loading: false });
-        toast.error("Không thể tải danh sách cuộc hội thoại");
+    // Listen for new conversation notifications (real-time)
+    conversationService.onNewConversationNotification((data: unknown) => {
+      const typedData = data as { conversation: Conversation };
+      console.log("🆕 New conversation notification:", typedData);
+      // Refresh conversations list to include new conversation
+      get().getConversations();
+    });
+
+    // Listen for conversation deleted (real-time)
+    conversationService.onConversationDeleted((data: unknown) => {
+      const typedData = data as { conversationId: string };
+      console.log("🗑️ Conversation deleted (real-time):", typedData);
+      if (typedData.conversationId) {
+        get()._removeConversation(typedData.conversationId);
       }
     });
 
-    // Listen for conversation detail
-    conversationService.onConversationDetail((data) => {
-      console.log("📋 Chi tiết conversation:", data);
-      if (data.success && data.data) {
-        get().setCurrentConversation(data.data);
+    // Listen for unread count changes (real-time)
+    conversationService.onUnreadCountChanged((data: unknown) => {
+      const typedData = data as { conversationId: string; unreadCount: number };
+      console.log("📬 Unread count changed (real-time):", typedData);
+      if (typedData.conversationId && typeof typedData.unreadCount === 'number') {
+        get()._updateConversation(typedData.conversationId, { unreadCount: typedData.unreadCount });
+        // Also update total unread count
+        get().getTotalUnreadCount();
       }
     });
 
-    // Listen for search results
-    conversationService.onSearchConversationsResult((data) => {
-      console.log("🔍 Kết quả tìm kiếm:", data);
-      if (data.success && data.data) {
-        get()._setSearchResults(data.data);
-      } else {
-        toast.error("Không thể tìm kiếm");
+    // Listen for typing indicators (real-time)
+    conversationService.onUserTyping((data: unknown) => {
+      const typedData = data as UserTypingResponse;
+      console.log("⌨️ User typing (real-time):", typedData);
+      // Handle typing indicators in UI
+    });
+
+    conversationService.onUserStoppedTyping((data: unknown) => {
+      const typedData = data as UserTypingResponse;
+      console.log("⌨️ User stopped typing (real-time):", typedData);
+      // Handle typing indicators in UI
+    });
+
+    // Listen for conversation errors (real-time)
+    conversationService.onConversationError((data: unknown) => {
+      const typedData = data as ConversationErrorResponse;
+      console.error("❌ Conversation error (real-time):", typedData);
+      if (typedData.message) {
+        toast.error(typedData.message);
       }
     });
 
-    // Listen for delete success
-    conversationService.onDeleteConversationSuccess((data) => {
-      console.log("✅ Xóa conversation thành công:", data);
-      if (data.success) {
-        toast.success("Đã xóa cuộc hội thoại");
-      }
-    });
-
-    // Listen for total unread count
-    conversationService.onTotalUnreadCount((data) => {
-      console.log("📊 Tổng unread count:", data);
-      if (data.success && data.data) {
-        get()._setTotalUnreadCount(data.data.totalUnread);
-      }
-    });
-
-    // Listen for reset unread count success
-    conversationService.onResetUnreadCountSuccess((data) => {
-      console.log("✅ Reset unread count thành công:", data);
-      // ✅ Cập nhật conversation từ server response để đảm bảo đồng bộ
-      if (data.success && data.data) {
-        get()._updateConversation(data.data._id, { unreadCount: 0 });
-      }
-    });
-
-    // Listen for conversation updated (e.g., after deleting message)
-    conversationService.onConversationUpdated((data) => {
-      console.log("🔄 Conversation updated:", data);
-      if (data.conversationId && data.updates) {
-        get()._updateConversation(data.conversationId, data.updates);
-        console.log("✅ Updated conversation lastMessage:", data.updates.lastMessage);
-      }
-    });
-
-    // Listen for errors
-    conversationService.onConversationError((data) => {
-      console.error("❌ Lỗi conversation:", data);
-      toast.error(data.message);
-      set({ loading: false });
-    });
-
-    conversationService.onConversationsError((data) => {
-      console.error("❌ Lỗi lấy conversations:", data);
-      toast.error(data.message);
-      set({ loading: false });
-    });
-
-    console.log("✅ Đã thiết lập xong conversation Socket listeners");
+    console.log("✅ Real-time conversation listeners setup complete");
     set({ _listenersSetup: true });
   },
 
   /**
-   * Remove Socket listeners
+   * Remove real-time Socket listeners
    */
   removeSocketListeners: () => {
-    console.log("🧹 Đang xóa conversation Socket listeners...");
+    console.log("🧹 Removing real-time conversation Socket listeners...");
     conversationService.removeAllListeners();
     set({ _listenersSetup: false });
-    console.log("✅ Đã xóa xong conversation Socket listeners");
+    console.log("✅ Real-time conversation Socket listeners removed");
   },
 
   // ==================== INTERNAL STATE SETTERS ====================
 
   /**
-   * Set conversations
+   * Set conversations list
    */
   _setConversations: (conversations: Conversation[]) => {
-    set({ conversations: [...conversations] }); // ✅ Tạo array mới để trigger re-render
+    set({ conversations });
   },
 
   /**
-   * Add new conversation
+   * Add conversation to list
    */
   _addConversation: (conversation: Conversation) => {
-    set(state => {
-      // Kiểm tra conversation đã tồn tại chưa
-      if (state.conversations.some(c => c._id === conversation._id)) {
-        return state;
-      }
-      return {
-        conversations: [conversation, ...state.conversations]
-      };
-    });
+    const state = get();
+    const exists = state.conversations.find(c => c._id === conversation._id);
+    if (!exists) {
+      set({ conversations: [conversation, ...state.conversations] });
+    }
   },
 
   /**
-   * Update conversation
+   * Update conversation in list
    */
   _updateConversation: (conversationId: string, updates: Partial<Conversation>) => {
-    set(state => ({
-      conversations: state.conversations.map(c =>
-        c._id === conversationId ? { ...c, ...updates } : c
-      ),
-      currentConversation:
-        state.currentConversation?._id === conversationId
-          ? { ...state.currentConversation, ...updates }
-          : state.currentConversation
-    }));
+    const state = get();
+    const conversationIndex = state.conversations.findIndex(c => c._id === conversationId);
+    
+    if (conversationIndex !== -1) {
+      const updatedConversations = [...state.conversations];
+      updatedConversations[conversationIndex] = { ...updatedConversations[conversationIndex], ...updates };
+      set({ conversations: updatedConversations });
+      
+      // Also update current conversation if it matches
+      if (state.currentConversation?._id === conversationId) {
+        set({ currentConversation: { ...state.currentConversation, ...updates } });
+      }
+    }
   },
 
   /**
-   * Remove conversation
+   * Remove conversation from list
    */
   _removeConversation: (conversationId: string) => {
-    set(state => ({
-      conversations: state.conversations.filter(c => c._id !== conversationId),
-      currentConversation:
-        state.currentConversation?._id === conversationId
-          ? null
-          : state.currentConversation
-    }));
+    const state = get();
+    const filteredConversations = state.conversations.filter(c => c._id !== conversationId);
+    
+    set({ 
+      conversations: filteredConversations,
+      currentConversation: state.currentConversation?._id === conversationId ? null : state.currentConversation
+    });
   },
 
   /**
@@ -326,5 +411,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
    */
   _setTotalUnreadCount: (count: number) => {
     set({ totalUnreadCount: count });
-  },
+  }
 }));
+
+export default useConversationStore;

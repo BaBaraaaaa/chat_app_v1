@@ -10,7 +10,7 @@ import { useSocketStore } from "@/stores/useSocketStore";
 import { useFriendStore } from "@/stores/useFriendStore";
 import type { Conversation } from "@/types/message";
 import type { Contact } from "../../types/chat";
-import { conversationService } from "@/services/conversationService";
+import { conversationApiService } from "@/services/conversationApiService";
 
 const ChatPanel = () => {
   const [selectedConversation, setSelectedConversation] =
@@ -27,12 +27,8 @@ const ChatPanel = () => {
     setCurrentConversation,
     _updateConversation,
   } = useConversationStore();
-  const {
-    messages,
-    sendMessage,
-    getMessages,
-    joinConversation,
-  } = useMessageStore();
+  const { messages, sendMessage, getMessages, joinConversation } =
+    useMessageStore();
 
   // ✅ Load conversations và friends khi connected
   useEffect(() => {
@@ -77,12 +73,19 @@ const ChatPanel = () => {
         _updateConversation(selectedConversation._id, { unreadCount: 0 });
 
         // ✅ Gọi API để persist vào database
-        conversationService.resetUnreadCount({
-          conversationId: selectedConversation._id,
-        });
+        // conversationService.resetUnreadCount({
+        //   conversationId: selectedConversation._id,
+        // });
+        conversationApiService.resetUnreadCount(selectedConversation._id);
       }
     }
-  }, [selectedConversation?._id, isConnected, joinConversation, getMessages, _updateConversation]);
+  }, [
+    selectedConversation?._id,
+    isConnected,
+    joinConversation,
+    getMessages,
+    _updateConversation,
+  ]);
   // Tự động đánh dấu đã đọc khi có tin nhắn mới đến TRONG conversation đang mở
   useEffect(() => {
     if (!selectedConversation || !isConnected) {
@@ -122,9 +125,7 @@ const ChatPanel = () => {
         _updateConversation(selectedConversation._id, { unreadCount: 0 });
 
         // ✅ Gọi API để persist vào database
-        conversationService.resetUnreadCount({
-          conversationId: selectedConversation._id,
-        });
+        conversationApiService.resetUnreadCount(selectedConversation._id);
       } else {
         console.log(
           "🔴 Skip auto-mark-read: unreadCount is 0 or conversation not found"
@@ -160,7 +161,10 @@ const ChatPanel = () => {
   };
 
   const handleSendMessage = (content: string) => {
-    console.log("🔵 ChatPanel handleSendMessage called:", { content, hasConversation: !!selectedConversation });
+    console.log("🔵 ChatPanel handleSendMessage called:", {
+      content,
+      hasConversation: !!selectedConversation,
+    });
     if (content.trim() && selectedConversation) {
       console.log("📤 Sending message:", content);
 
@@ -183,7 +187,10 @@ const ChatPanel = () => {
       console.log("📦 Message payload:", payload);
       sendMessage(payload);
     } else {
-      console.log("❌ Send blocked:", { hasContent: !!content.trim(), hasConversation: !!selectedConversation });
+      console.log("❌ Send blocked:", {
+        hasContent: !!content.trim(),
+        hasConversation: !!selectedConversation,
+      });
     }
   };
 
