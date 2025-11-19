@@ -49,7 +49,6 @@ class MessageService {
     sendMessage(payload: SendMessagePayload): void {
         if (socketService.isConnected()) {
             socketService.emit('SEND_MESSAGE', payload);
-            console.log('📤 Đang gửi tin nhắn:', payload);
         } else {
             console.warn('⚠️ Socket chưa kết nối, không thể gửi tin nhắn');
         }

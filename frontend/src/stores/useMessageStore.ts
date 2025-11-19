@@ -66,9 +66,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
      * Gửi tin nhắn
      */
     sendMessage: (payload: SendMessagePayload) => {
-        console.log("🔵 useMessageStore.sendMessage called with payload:", payload);
         if (!messageService.isConnected()) {
-            console.error("❌ Socket not connected!");
             toast.error("Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối.");
             return;
         }
@@ -209,8 +207,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         // Listen for new message (real-time)
         console.log("🎧 Đang register listener NEW_MESSAGE...");
         messageService.onNewMessage((data) => {
-            console.log("📩 NEW_MESSAGE:", data.conversationId);
-            
             get()._addMessage(data.conversationId, data.message);
 
             // ✅ Cập nhật sidebar conversation's lastMessage và unreadCount
@@ -225,7 +221,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 // ✅ Nếu conversation chưa có trong list (conversation mới tạo chưa có message)
                 // → Fetch lại conversations để lấy conversation này
                 if (!conversation) {
-                    console.log("⚠️ Conversation not found in list, fetching...");
+                    console.log("⚠️ Conversation không tồn tại trong store, fetching lại conversations...");
                     conversationStore.getConversations();
                     return;
                 }

@@ -135,7 +135,7 @@ export default function ChatAreaMui({
           <Typography variant="h5" fontWeight="semibold" gutterBottom>
             Chào mừng đến với ChatApp
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography component="p" color="text.secondary" sx={{ mb: 3 }}>
             Chọn một cuộc trò chuyện để bắt đầu nhắn tin
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>

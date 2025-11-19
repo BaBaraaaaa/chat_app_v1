@@ -166,8 +166,6 @@ const ChatPanel = () => {
       hasConversation: !!selectedConversation,
     });
     if (content.trim() && selectedConversation) {
-      console.log("📤 Sending message:", content);
-
       // Tìm receiverId (người nhận là participant khác không phải user)
       const receiver = selectedConversation.participants.find(
         (p) => p._id !== user?._id
@@ -177,14 +175,12 @@ const ChatPanel = () => {
         return;
       }
 
-      console.log("✅ Receiver found:", receiver._id);
       const payload = {
         conversationId: selectedConversation._id,
         receiverId: receiver._id,
         content: content,
         type: "text" as const,
       };
-      console.log("📦 Message payload:", payload);
       sendMessage(payload);
     } else {
       console.log("❌ Send blocked:", {

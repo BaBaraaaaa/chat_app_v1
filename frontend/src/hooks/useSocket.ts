@@ -20,8 +20,6 @@ export const useSocket = () => {
     registerUser,
     onlineUsers,
     onlineCount,
-    notifications,
-    unreadCount
   } = useSocketStore();
   
   const { setupSocketListeners, removeSocketListeners } = useFriendStore();
@@ -37,7 +35,6 @@ export const useSocket = () => {
     const shouldDisconnect = (!user || !accessToken) && hasConnectedRef.current;
 
     if (shouldConnect) {
-      console.log('🔌 Initiating socket connection for user:', user.username);
       
       connect(accessToken)
         .then((success) => {
@@ -131,8 +128,6 @@ export const useSocket = () => {
     onlineCount,
     
     // Notifications
-    notifications,
-    unreadCount,
     
     // Manual connection control (nếu cần)
     connect: () => user && accessToken ? connect(accessToken) : Promise.resolve(false),

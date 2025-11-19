@@ -78,10 +78,8 @@ export default function MessageInputMui({
   }, [currentConversation, user, stopTyping]);
 
   const handleSend = useCallback(() => {
-    console.log("🔵 MessageInput handleSend called:", { localValue, disabled });
     if (localValue.trim() && !disabled) {
-      console.log("✅ Conditions met, calling onSendMessage");
-      
+  
       // Stop typing khi gửi
       if (isTypingRef.current && currentConversation && user) {
         const receiver = currentConversation.participants.find(p => p._id !== user._id);
