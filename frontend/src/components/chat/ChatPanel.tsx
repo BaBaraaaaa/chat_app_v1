@@ -33,7 +33,6 @@ const ChatPanel = () => {
   // ✅ Load conversations và friends khi connected
   useEffect(() => {
     if (isConnected && user) {
-      console.log("📋 ChatPanel: Loading conversations and friends");
       getConversations();
       getFriendsList(); // ✅ Load friends list để check friendship
     }

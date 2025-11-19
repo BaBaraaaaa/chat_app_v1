@@ -17,7 +17,7 @@ import MessageItemMui from "./MessageItem-mui";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useMessageStore } from "@/stores/useMessageStore";
 import { useConversationStore } from "@/stores/useConversationStore";
-import { conversationService } from "@/services/conversationService";
+import { conversationService } from "@/socket/conversationService";
 
 interface MessageListProps {
   messages: Message[];

@@ -5,7 +5,7 @@
 
 import { create } from "zustand";
 import { toast } from "sonner";
-import { conversationService } from "@/services/conversationService"; // Real-time only
+import { conversationService } from "@/socket/conversationService"; // Real-time only
 import { conversationApiService } from "@/services/conversationApiService"; // REST API
 import type { 
   Conversation,
@@ -288,7 +288,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       const typedData = data as { conversation: Conversation };
       console.log("🆕 New conversation notification:", typedData);
       // Refresh conversations list to include new conversation
-      get().getConversations();
+      get()._addConversation(typedData.conversation);
     });
 
     // Listen for conversation deleted (real-time)

@@ -1,5 +1,5 @@
 import { friendService } from "@/services/friendService";
-import { socketService } from "@/services/socketService";
+import { socketService } from "@/socket/socketService";
 import type { FriendState } from "@/type/store";
 import { toast } from "sonner";
 import { create } from "zustand";

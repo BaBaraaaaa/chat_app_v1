@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { socketService } from '@/services/socketService';
+import { socketService } from '@/socket/socketService';
 import type { OnlineUsersListData } from '@/types/socket';
 
 interface SocketState {
@@ -50,9 +50,8 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         connectionError: null 
       });
       
-      // Setup core listeners after successful connection
+      // Setup core listeners after successful connection (cho phép tái kết nối)
       get().setupCoreListeners();
-      
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection failed';

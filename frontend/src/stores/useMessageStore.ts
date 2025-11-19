@@ -5,7 +5,7 @@
 
 import { create } from "zustand";
 import { toast } from "sonner";
-import { messageService } from "@/services/messageService";
+import { messageService } from "@/socket/messageService";
 import { useConversationStore } from "./useConversationStore";
 import { useAuthStore } from "./useAuthStore";
 import type {
@@ -70,7 +70,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             toast.error("Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối.");
             return;
         }
-        console.log("✅ Socket connected, calling messageService.sendMessage");
         messageService.sendMessage(payload);
     },
 

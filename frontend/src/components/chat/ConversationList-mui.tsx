@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {  useState } from "react";
 import {
   Box,
   List,
@@ -43,17 +43,14 @@ export default function ConversationListMui({
   onNewChat,
 }: ConversationListProps) {
   const { user } = useAuthStore();
-  const { isConnected, onlineUsers } = useSocketStore();
+  const { onlineUsers } = useSocketStore();
   const {
     conversations,
     currentConversation,
     loading,
     searchResults,
-    getConversations,
     searchConversations,
     clearSearchResults,
-    setupSocketListeners,
-    removeSocketListeners,
   } = useConversationStore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,26 +58,6 @@ export default function ConversationListMui({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
-  // Setup listeners when connected
-  useEffect(() => {
-    if (isConnected && user) {
-      console.log("🔗 Setting up conversation Socket listeners...");
-      setupSocketListeners();
-      getConversations();
-    }
-
-    return () => {
-      if (isConnected) {
-        removeSocketListeners();
-      }
-    };
-  }, [
-    isConnected,
-    user,
-    setupSocketListeners,
-    getConversations,
-    removeSocketListeners,
-  ]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
