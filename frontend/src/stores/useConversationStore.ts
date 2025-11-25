@@ -67,7 +67,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       const response = await conversationApiService.getOrCreateConversation(otherUserId);
       
       if (response.success && response.data) {
-        console.log('[data ]', response.data);
         const conversation = response.data ;
         
         // Add to conversations list if not exists

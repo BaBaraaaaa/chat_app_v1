@@ -74,6 +74,7 @@ export const conversationApiService = {
    * Backend endpoint: GET /api/conversations/:id
    */
   getConversationDetail: async (conversationId: string): Promise<ConversationResponse> => {
+    console.log("getConversation Details");
     const res = await api.get(
       `/conversations/${conversationId}`, 
       { withCredentials: true }

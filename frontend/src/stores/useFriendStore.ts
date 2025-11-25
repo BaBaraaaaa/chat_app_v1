@@ -1,4 +1,4 @@
-import { friendService } from "@/services/friendService";
+import { friendService } from "@/services/friendApiService";
 import { socketService } from "@/socket/socketService";
 import type { FriendState } from "@/type/store";
 import { toast } from "sonner";
