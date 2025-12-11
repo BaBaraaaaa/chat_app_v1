@@ -35,7 +35,7 @@ const ChatAppPage = () => {
       <LayoutMui
         activeView={activeView}
         onViewChange={setActiveView}
-        notificationCount={5}
+        notificationCount={0}
       >
         {renderMainContent()}
       </LayoutMui>
