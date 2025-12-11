@@ -58,6 +58,7 @@ export function SignupFormMui() {
         data.username,
         data.password,
         data.email,
+        data.displayName
       );
 
       navigate("/login");
