@@ -5,7 +5,7 @@ const api = axios.create({
   baseURL:
     import.meta.env.VITE_NODE_ENV === "development"
       ? "http://localhost:5000/api"
-      : "/api",
+      : `${import.meta.env.VITE_API_URL}/api`,
   withCredentials: true,
 });
 //interceptor hoạt động giống như middleware, nó can thiệp vào request trước khi gửi đi và response trước khi nhận về
