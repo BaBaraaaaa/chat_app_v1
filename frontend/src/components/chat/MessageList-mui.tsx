@@ -17,7 +17,7 @@ import MessageItemMui from "./MessageItem-mui";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useMessageStore } from "@/stores/useMessageStore";
 import { useConversationStore } from "@/stores/useConversationStore";
-import { conversationService } from "@/socket/conversationService";
+// import { conversationService } from "@/socket/conversationService";
 
 interface MessageListProps {
   messages: Message[];
@@ -112,9 +112,9 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
             currentUnreadCount
           );
           _updateConversation(conversationId, { unreadCount: 0 });
-          conversationService.resetUnreadCount({
-            conversationId: conversationId,
-          });
+          // conversationService.resetUnreadCount({
+          //   conversationId: conversationId,
+          // });
         }
       }, 50);
     };

@@ -3,7 +3,6 @@ export { useTheme } from './useTheme';
 
 // Export theme provider
 export { CustomMuiThemeProvider } from './MuiThemeProvider';
-export { ThemeContextProvider } from './ThemeContext';
 
 // Export themes
 export { lightTheme, darkTheme } from './muiTheme';
