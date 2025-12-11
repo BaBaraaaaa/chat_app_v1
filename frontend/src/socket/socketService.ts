@@ -26,7 +26,7 @@ class SocketService {
     private isConnecting: boolean = false;
 
     constructor() {
-        this.SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+        this.SERVER_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
     }
 
     connect(token?: string): Promise<Socket> {
