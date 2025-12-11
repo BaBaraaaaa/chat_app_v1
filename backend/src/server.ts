@@ -13,6 +13,7 @@ import friendRequestRoute from './routes/friendsRoute';
 import { registerSocketHandlers } from './socket/registerSocketHandlers';
 import { socketAuthMiddleware } from './middleware/socketAuthMiddleware';
 import conversationRoute from './routes/conversationsRoute';
+import { testCloudinaryConfig } from './utils/testCloudinary';
 // Cấu hình dotenv để sử dụng biến môi trường từ file .env
 dotenv.config();
 
@@ -35,6 +36,9 @@ const io = new Server(server, {
 io.use(socketAuthMiddleware);
 
 const PORT = process.env.PORT || 5000;
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY!;
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET!;
 
 // Middleware để phân tích JSON
 app.use(express.json());
@@ -45,13 +49,23 @@ app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use('/api/auth/', authRoute);
 
 // Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    socketIO: 'enabled'
-  });
+app.get('/health', async (req: Request, res: Response) => {
+  try {
+    const cloudinaryTest = await testCloudinaryConfig();
+    res.status(200).json({ 
+      status: 'OK', 
+      message: 'Server is running',
+      timestamp: new Date().toISOString(),
+      socketIO: 'enabled',
+      cloudinary: cloudinaryTest
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Server health check failed',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
 });
 
 // Socket connection info endpoint (development only)

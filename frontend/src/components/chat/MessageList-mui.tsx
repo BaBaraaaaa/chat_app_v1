@@ -26,9 +26,11 @@ interface MessageListProps {
 }
 
 // Memoized typing indicator
-const TypingIndicator = memo(({ userInitial }: { userInitial: string }) => (
+const TypingIndicator = memo(({ userInitial, userAvatar }: { userInitial: string; userAvatar?: string }) => (
   <Box sx={{ display: "flex", alignItems: "start", gap: 1, mb: 1 }}>
     <Avatar
+      src={userAvatar}
+      alt={userInitial}
       sx={{ width: 32, height: 32, bgcolor: "grey.400", fontSize: "0.875rem" }}
     >
       {userInitial}
@@ -224,6 +226,11 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
                       : message.senderId.displayName ||
                         message.senderId.username
                   }
+                  senderAvatar={
+                    message.senderId._id === user?._id
+                      ? user?.avatarUrl
+                      : message.senderId.avatarUrl
+                  }
                   onEdit={handleEdit}
                   onDelete={handleDeleteClick}
                 />
@@ -238,6 +245,7 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
                     <TypingIndicator
                       key={index}
                       userInitial={otherUser?.displayName?.charAt(0) || "U"}
+                      userAvatar={otherUser?.avatarUrl}
                     />
                   );
                 })}

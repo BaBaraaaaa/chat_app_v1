@@ -53,18 +53,15 @@ export function SignupFormMui() {
     setError(null);
 
     try {
-      const [firstName, ...lastNames] = data.displayName.split(' ');
-      const lastName = lastNames.join(' ') || firstName;
       
       await authService.signUp(
         data.username,
         data.password,
         data.email,
-        firstName,
-        lastName
       );
 
       navigate("/login");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.message || "Đăng ký thất bại");
     } finally {

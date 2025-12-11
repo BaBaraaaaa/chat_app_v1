@@ -31,8 +31,9 @@ export const useSocket = () => {
 
   // Auto connect/disconnect dựa trên auth state
   useEffect(() => {
-    const shouldConnect = !!user && !!accessToken && !hasConnectedRef.current;
-    const shouldDisconnect = (!user || !accessToken) && hasConnectedRef.current;
+    const userId = user?._id;
+    const shouldConnect = !!userId && !!accessToken && !hasConnectedRef.current;
+    const shouldDisconnect = (!userId || !accessToken) && hasConnectedRef.current;
 
     if (shouldConnect) {
       
@@ -42,7 +43,7 @@ export const useSocket = () => {
             hasConnectedRef.current = true;
             
             // ✅ registerUser có flag check trong store rồi
-            registerUser(user._id);
+            registerUser(userId);
             
             // ✅ Setup TẤT CẢ socket listeners chỉ một lần
             if (!listenersSetupRef.current) {
@@ -53,7 +54,7 @@ export const useSocket = () => {
               listenersSetupRef.current = true;
             }
             
-            console.log('✅ Socket đã kết nối và đăng ký người dùng:', user.username);
+            console.log('✅ Socket đã kết nối và đăng ký người dùng:', user?.username);
           }
         })
         .catch((error) => {
@@ -84,7 +85,7 @@ export const useSocket = () => {
         listenersSetupRef.current = false;
       }
     };
-  }, [user, accessToken, connect, disconnect, registerUser, setupSocketListeners, removeSocketListeners, setupConversationListeners, removeConversationListeners, setupMessageListeners, removeMessageListeners]);
+  }, [user?._id, accessToken, connect, disconnect, registerUser, setupSocketListeners, removeSocketListeners, setupConversationListeners, removeConversationListeners, setupMessageListeners, removeMessageListeners]);
 
   // Reconnection logic khi connection bị mất
   useEffect(() => {

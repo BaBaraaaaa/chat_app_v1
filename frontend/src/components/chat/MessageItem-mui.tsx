@@ -7,6 +7,7 @@ interface MessageItemProps {
   message: MessageType;
   isOwn: boolean;
   senderName: string;
+  senderAvatar?: string;
   onEdit?: (messageId: string) => void;
   onDelete?: (messageId: string) => void;
   onReply?: (messageId: string) => void;
@@ -16,6 +17,7 @@ export default function MessageItemMui({
   message, 
   isOwn, 
   senderName,
+  senderAvatar,
   onEdit,
   onDelete,
   onReply 
@@ -76,7 +78,11 @@ export default function MessageItemMui({
     >
       <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, maxWidth: { xs: '85%', sm: '70%' } }}>
         {!isOwn && (
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.400', fontSize: '0.875rem' }}>
+          <Avatar 
+            src={senderAvatar} 
+            alt={senderName}
+            sx={{ width: 32, height: 32, bgcolor: 'grey.400', fontSize: '0.875rem' }}
+          >
             {senderName.charAt(0).toUpperCase()}
           </Avatar>
         )}

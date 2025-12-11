@@ -131,7 +131,7 @@ MessageSchema.statics.getUnreadMessages = async function(
   }
 
   return await this.find(query)
-    .populate('senderId', 'username displayName avatar')
+    .populate('senderId', 'username displayName avatarUrl')
     .populate('conversationId')
     .sort({ createdAt: -1 });
 };

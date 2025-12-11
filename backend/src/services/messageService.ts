@@ -82,8 +82,8 @@ export class MessageService {
 
       // Populate thông tin sender
       const populatedMessage = await Message.findById(newMessage._id)
-        .populate('senderId', 'username displayName avatar firstName lastName')
-        .populate('receiverId', 'username displayName avatar firstName lastName')
+        .populate('senderId', 'username displayName avatarUrl firstName lastName')
+        .populate('receiverId', 'username displayName avatarUrl firstName lastName')
         .populate('replyTo');
 
       // Cập nhật lastMessage trong conversation
@@ -149,8 +149,8 @@ export class MessageService {
         conversationId,
         isDeleted: false
       })
-        .populate('senderId', 'username displayName avatar firstName lastName')
-        .populate('receiverId', 'username displayName avatar firstName lastName')
+        .populate('senderId', 'username displayName avatarUrl firstName lastName')
+        .populate('receiverId', 'username displayName avatarUrl firstName lastName')
         .populate('replyTo')
         .sort({ createdAt: -1 })
         .limit(limit)
@@ -309,7 +309,7 @@ export class MessageService {
         isDeleted: false
       })
         .sort({ createdAt: -1 })
-        .populate('senderId', 'username displayName avatar');
+        .populate('senderId', 'username displayName avatarUrl');
 
       if (latestMessage) {
         // Còn tin nhắn → Cập nhật lastMessage thành tin nhắn gần nhất
@@ -407,8 +407,8 @@ export class MessageService {
       await message.save();
 
       const populatedMessage = await Message.findById(messageId)
-        .populate('senderId', 'username displayName avatar firstName lastName')
-        .populate('receiverId', 'username displayName avatar firstName lastName');
+        .populate('senderId', 'username displayName avatarUrl firstName lastName')
+        .populate('receiverId', 'username displayName avatarUrl firstName lastName');
 
       return {
         success: true,

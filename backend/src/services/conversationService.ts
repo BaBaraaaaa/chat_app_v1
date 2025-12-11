@@ -102,8 +102,8 @@ export class ConversationService {
         participants: userId,
         isActive: true
       })
-        .populate('participants', 'username displayName avatar firstName lastName email')
-        .populate('lastMessage.senderId', 'username displayName avatar')
+        .populate('participants', 'username displayName avatarUrl firstName lastName email')
+        .populate('lastMessage.senderId', 'username displayName avatarUrl')
         .sort({ 'lastMessage.sentAt': -1 });
 
       // Thêm thông tin unread count cho user hiện tại
@@ -139,8 +139,8 @@ export class ConversationService {
   ): Promise<ConversationResponse> {
     try {
       const conversation = await Conversation.findById(conversationId)
-        .populate('participants', 'username displayName avatar firstName lastName email')
-        .populate('lastMessage.senderId', 'username displayName avatar');
+        .populate('participants', 'username displayName avatarUrl firstName lastName email')
+        .populate('lastMessage.senderId', 'username displayName avatarUrl');
 
       if (!conversation) {
         return {
@@ -250,8 +250,8 @@ export class ConversationService {
         },
         { new: true }
       )
-        .populate('participants', 'username displayName avatar firstName lastName email')
-        .populate('lastMessage.senderId', 'username displayName avatar');
+        .populate('participants', 'username displayName avatarUrl firstName lastName email')
+        .populate('lastMessage.senderId', 'username displayName avatarUrl');
 
       if (!conversation) {
         return {
@@ -295,8 +295,8 @@ export class ConversationService {
         participants: userId,
         isActive: true
       })
-        .populate('participants', 'username displayName avatar firstName lastName email')
-        .populate('lastMessage.senderId', 'username displayName avatar');
+        .populate('participants', 'username displayName avatarUrl firstName lastName email')
+        .populate('lastMessage.senderId', 'username displayName avatarUrl');
 
       // Filter conversations dựa vào tên người tham gia hoặc lastMessage
       const filtered = conversations.filter(conv => {

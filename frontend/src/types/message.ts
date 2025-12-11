@@ -45,7 +45,7 @@ export interface Message {
     _id: string;
     username: string;
     displayName: string;
-    avatar?: string;
+    avatarUrl?: string;
     firstName?: string;
     lastName?: string;
   };
@@ -77,7 +77,7 @@ export interface ConversationParticipant {
   _id: string;
   username: string;
   displayName: string;
-  avatar?: string;
+  avatarUrl?: string;
   firstName?: string;
   lastName?: string;
   email?: string;

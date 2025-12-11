@@ -254,7 +254,7 @@ const ChatPanel = () => {
     return {
       id: selectedConversation._id,
       name: otherUser.displayName || otherUser.username,
-      avatar: otherUser.avatar,
+      avatarUrl: otherUser.avatarUrl,
       lastMessage:
         selectedConversation.lastMessage?.content || "Bắt đầu cuộc trò chuyện",
       timestamp: selectedConversation.lastMessage

@@ -9,7 +9,7 @@ export interface Message {
 export interface Contact {
   id: string;
   name: string;
-  avatar?: string;
+  avatarUrl?: string;
   lastMessage: string;
   timestamp: string;
   isOnline: boolean;

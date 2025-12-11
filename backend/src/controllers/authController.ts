@@ -8,8 +8,8 @@ const ACCESS_TOKEN_TTL = 15 * 60 * 1000; // Thời gian sống của access toke
 const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000; // Thời gian sống của refresh token 7 ngày
 export const signUp = async (req: Request, res: Response) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
-    if (!username || !email || !password || !firstName || !lastName) {
+    const { username, email, password, displayName } = req.body;
+    if (!username || !email || !password || !displayName) {
       return res
         .status(400)
         .json({ message: "Vui lòng điền đầy đủ thông tin." });
@@ -29,7 +29,7 @@ export const signUp = async (req: Request, res: Response) => {
       username,
       email,
       hashedPassword,
-      displayName: `${firstName} ${lastName}`,
+      displayName,
     });
     await newUser.save();
     return res.status(204).json({ message: "Đăng ký thành công." });

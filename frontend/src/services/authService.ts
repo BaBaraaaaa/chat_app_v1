@@ -5,12 +5,11 @@ export const authService = {
     username: string,
     password: string,
     email: string,
-    firstName: string,
-    lastName: string
+    displayName?: string,
   ) => {
     const res = await api.post(
       "/auth/register",
-      { username, password, email, firstName, lastName },
+      { username, password, email, displayName },
       {withCredentials: true}
     );
     return res.data;

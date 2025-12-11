@@ -23,11 +23,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ accessToken });
   },
 
-  signUp: async (username, password, email, firstName, lastName) => {
+  signUp: async (username, password, email, displayName) => {
     try {
       set({ loading: true });
       //gọi api
-      await authService.signUp(username, password, email, firstName, lastName);
+      await authService.signUp(username, password, email, displayName);
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       return { success: true };
     } catch (error) {
@@ -105,5 +105,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   toggleDarkMode: () => {
     const { darkMode } = get();
     set({ darkMode: !darkMode });
+  },
+  updateUser: (userData) => {
+    set({ user: userData });
+  },
+  updateAvatar: (avatarUrl: string | null | undefined) => {
+    const { user } = get();
+    if (user) {
+      set({ user: { ...user, avatarUrl: avatarUrl ?? undefined } });
+    }
   },
 }));

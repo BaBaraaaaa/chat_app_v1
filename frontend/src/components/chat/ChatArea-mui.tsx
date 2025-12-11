@@ -179,7 +179,7 @@ export default function ChatAreaMui({
           bgcolor: 'background.paper',
         }}
       >
-        <Avatar>{selectedContact.name[0]}</Avatar>
+        <Avatar src={selectedContact.avatarUrl}>{selectedContact.name[0]}</Avatar>
         <Box sx={{ flex: 1 }}>
           <Typography variant="subtitle1" fontWeight="bold">
             {selectedContact.name}

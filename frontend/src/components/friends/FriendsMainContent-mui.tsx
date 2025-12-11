@@ -444,8 +444,8 @@ const FriendsMainContentMui = () => {
                             minWidth: 0,
                           }}
                         >
-                          <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.light' }}>
-                            {friend.displayName?.charAt(0).toUpperCase() || <Person />}
+                          <Avatar src={friend.avatarUrl} sx={{ width: 40, height: 40, bgcolor: 'primary.light' }}>
+                            {!friend.avatarUrl && <Person />}
                           </Avatar>
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Typography

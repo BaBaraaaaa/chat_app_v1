@@ -265,7 +265,7 @@ export default function ConversationListMui({
                   <ListItemAvatar>
                     <Box sx={{ position: "relative" }}>
                       <Avatar
-                        src={otherUser.avatar}
+                        src={otherUser.avatarUrl}
                         alt={otherUser.displayName}
                         sx={{ width: 44, height: 44 }}
                       >

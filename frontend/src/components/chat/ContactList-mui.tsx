@@ -41,7 +41,7 @@ export default function ContactListMui({ contacts, selectedContact, onContactSel
                   },
                 }}
               >
-                <Avatar src={contact.avatar} alt={contact.name}>
+                <Avatar src={contact.avatarUrl} alt={contact.name}>
                   {contact.name[0]}
                 </Avatar>
               </Badge>

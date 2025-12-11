@@ -22,6 +22,8 @@ export interface AuthState {
     fetchMe: () => Promise<void>;
     refresh: () => Promise<string | null>;
     toggleDarkMode: () => void;
+    updateUser: (userData: User) => void;
+    updateAvatar: (avatarUrl: string | null) => void;
 }
 export interface Friend {
     _id: string;
