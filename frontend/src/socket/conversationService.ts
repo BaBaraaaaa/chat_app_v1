@@ -5,6 +5,7 @@
  * NOTE: For data loading (CRUD operations), use conversationApiService.ts
  */
 
+import { toast } from 'sonner';
 import { socketService } from './socketService';
 import type {
   ConversationUpdatedResponse,
@@ -30,10 +31,8 @@ class ConversationSocketService {
   joinConversationRoom(conversationId: string): void {
     if (socketService.isConnected()) {
       socketService.emit('JOIN_CONVERSATION_ROOM', { conversationId });
-      console.log('🏠 Joined conversation room:', conversationId);
     } else {
-      console.warn('⚠️ Socket chưa kết nối, không thể join room');
-    }
+      console.warn('⚠️ Socket chưa kết nối');}
   }
 
   /**
@@ -42,9 +41,8 @@ class ConversationSocketService {
   leaveConversationRoom(conversationId: string): void {
     if (socketService.isConnected()) {
       socketService.emit('LEAVE_CONVERSATION_ROOM', { conversationId });
-      console.log('� Left conversation room:', conversationId);
     } else {
-      console.warn('⚠️ Socket chưa kết nối');
+      toast.warning('⚠️ Socket chưa kết nối');
     }
   }
 
@@ -63,7 +61,6 @@ class ConversationSocketService {
   markAsReadRealtime(conversationId: string): void {
     if (socketService.isConnected()) {
       socketService.emit('MARK_CONVERSATION_READ', { conversationId });
-      console.log('📖 Marked conversation as read (real-time):', conversationId);
     }
   }
 
@@ -154,7 +151,6 @@ class ConversationSocketService {
       socketService.removeListener(event);
     });
 
-    console.log('🧹 Removed all real-time conversation listeners');
   }
 
   /**

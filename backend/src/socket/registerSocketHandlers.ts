@@ -13,7 +13,6 @@ export const registerSocketHandlers = (io: Server) => {
   io.on("connection", async (socket: Socket) => {
     // ✅ userId đã được set bởi socketAuthMiddleware
     const userId = socket.data.userId;
-    console.log(`🟢 User connected: ${socket.id} | UserId: ${userId || 'UNKNOWN'}`);
 
     // ✅ Đăng ký friend request handlers Ở CONNECTION LEVEL (1 lần per connection)
     registerFriendRequestHandler(io, socket, onlineUsers);
@@ -44,8 +43,6 @@ export const registerSocketHandlers = (io: Server) => {
         if (!onlineUsers.some((u) => u.userId === userId)) {
           onlineUsers.push({ userId, socketId: socket.id });
           
-          console.log("👥 User registered online:", userId);
-          console.log("👥 Total online users:", onlineUsers.length);
           
           // Broadcast danh sách online users cho tất cả clients
           io.emit("ONLINE_USERS_LIST", {
@@ -53,7 +50,6 @@ export const registerSocketHandlers = (io: Server) => {
             count: onlineUsers.length
           });
         } else {
-          console.log("⚠️ User already registered:", userId);
         }
       } catch (error) {
         console.error("Lỗi kết nối:", error);
@@ -63,7 +59,6 @@ export const registerSocketHandlers = (io: Server) => {
 
     //xử lý disconnect - ĐẶT Ở CONNECTION LEVEL (ngoài user:online)
     socket.on("disconnect", () => {
-      console.log("🔴 User disconnected:", socket.id);
       const index = onlineUsers.findIndex((u) => u.socketId === socket.id);
       if (index !== -1) {
         onlineUsers.splice(index, 1);

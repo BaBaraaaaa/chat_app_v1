@@ -10,8 +10,6 @@ import { conversationApiService } from "@/services/conversationApiService"; // R
 import type { 
   Conversation,
   ConversationUpdatedResponse,
-  ConversationErrorResponse,
-  UserTypingResponse
 } from "@/types/message";
 
 interface ConversationState {
@@ -106,7 +104,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       
       if (response.success) {
         set({ conversations: response.data });
-        console.log(`📋 Loaded ${response.data?.length} conversations`);
       } else {
         toast.error("Không thể tải danh sách cuộc hội thoại");
       }
@@ -151,7 +148,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       
       if (response.success) {
         set({ searchResults: response.data });
-        console.log(`🔍 Found ${response.data?.length} conversations for "${query}"`);
       } else {
         set({ searchResults: [] });
         toast.error("Không thể tìm kiếm cuộc hội thoại");
@@ -267,16 +263,13 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
    */
   setupSocketListeners: () => {
     if (get()._listenersSetup) {
-      console.log("⚠️ Real-time conversation listeners already setup, skipping...");
       return;
     }
 
-    console.log("🔧 Setting up real-time conversation Socket listeners...");
 
     // Listen for conversation updates (real-time)
     conversationService.onConversationUpdated((data: unknown) => {
       const typedData = data as ConversationUpdatedResponse;
-      console.log("🔄 Conversation updated (real-time):", typedData);
       if (typedData.conversationId && typedData.updates) {
         get()._updateConversation(typedData.conversationId, typedData.updates);
       }
@@ -285,7 +278,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     // Listen for new conversation notifications (real-time)
     conversationService.onNewConversationNotification((data: unknown) => {
       const typedData = data as { conversation: Conversation };
-      console.log("🆕 New conversation notification:", typedData);
       // Refresh conversations list to include new conversation
       get()._addConversation(typedData.conversation);
     });
@@ -293,7 +285,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     // Listen for conversation deleted (real-time)
     conversationService.onConversationDeleted((data: unknown) => {
       const typedData = data as { conversationId: string };
-      console.log("🗑️ Conversation deleted (real-time):", typedData);
       if (typedData.conversationId) {
         get()._removeConversation(typedData.conversationId);
       }
@@ -302,7 +293,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     // Listen for unread count changes (real-time)
     conversationService.onUnreadCountChanged((data: unknown) => {
       const typedData = data as { conversationId: string; unreadCount: number };
-      console.log("📬 Unread count changed (real-time):", typedData);
       if (typedData.conversationId && typeof typedData.unreadCount === 'number') {
         get()._updateConversation(typedData.conversationId, { unreadCount: typedData.unreadCount });
         // Also update total unread count
@@ -310,29 +300,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }
     });
 
-    // Listen for typing indicators (real-time)
-    conversationService.onUserTyping((data: unknown) => {
-      const typedData = data as UserTypingResponse;
-      console.log("⌨️ User typing (real-time):", typedData);
-      // Handle typing indicators in UI
-    });
 
-    conversationService.onUserStoppedTyping((data: unknown) => {
-      const typedData = data as UserTypingResponse;
-      console.log("⌨️ User stopped typing (real-time):", typedData);
-      // Handle typing indicators in UI
-    });
-
-    // Listen for conversation errors (real-time)
-    conversationService.onConversationError((data: unknown) => {
-      const typedData = data as ConversationErrorResponse;
-      console.error("❌ Conversation error (real-time):", typedData);
-      if (typedData.message) {
-        toast.error(typedData.message);
-      }
-    });
-
-    console.log("✅ Real-time conversation listeners setup complete");
     set({ _listenersSetup: true });
   },
 
@@ -340,10 +308,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
    * Remove real-time Socket listeners
    */
   removeSocketListeners: () => {
-    console.log("🧹 Removing real-time conversation Socket listeners...");
     conversationService.removeAllListeners();
     set({ _listenersSetup: false });
-    console.log("✅ Real-time conversation Socket listeners removed");
   },
 
   // ==================== INTERNAL STATE SETTERS ====================

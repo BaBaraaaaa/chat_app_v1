@@ -28,7 +28,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       const response = await friendService.getFriendsList();
       set({ friends: response.data?.friends || [] });
     } catch (error) {
-      console.log("Lỗi khi lấy danh sách bạn bè:", error);
+      console.error("Lỗi khi lấy danh sách bạn bè:", error);
       toast.error("Không thể tải danh sách bạn bè. Vui lòng thử lại.");
     } finally {
       set({ loading: false });
@@ -41,7 +41,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       const response = await friendService.getReceivedFriendRequests();
       set({ receivedRequests: response.data || [] });
     } catch (error) {
-      console.log("Lỗi khi lấy lời mời kết bạn:", error);
+      console.error("Lỗi khi lấy lời mời kết bạn:", error);
       toast.error("Không thể tải lời mời kết bạn.");
     } finally {
       set({ loading: false });
@@ -54,7 +54,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       const response = await friendService.getSentFriendRequests();
       set({ sentRequests: response.data || [] });
     } catch (error) {
-      console.log("Lỗi khi lấy lời mời đã gửi:", error);
+      console.error("Lỗi khi lấy lời mời đã gửi:", error);
       toast.error("Không thể tải lời mời đã gửi.");
     } finally {
       set({ loading: false });
@@ -352,15 +352,12 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     // 🛡️ Tránh setup duplicate listeners
     if (get()._listenersSetup) {
-      console.log("⚠️ Friend listeners đã được setup, bỏ qua...");
       return;
     }
 
-    console.log("🔧 Đang thiết lập friend Socket listeners...");
 
     // Lắng nghe friend request mới
     socketService.onFriendRequestReceived((data) => {
-      console.log("📨 Nhận được lời mời kết bạn mới:", data);
       // Refresh danh sách friend requests
       get().getFriendRequests();
 
@@ -373,7 +370,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     // Lắng nghe phản hồi friend request (accept/decline)
     // ⚠️ Event này dành cho NGƯỜI GỬI lời mời, không phải người xử lý
     socketService.onFriendRequestResponse((data) => {
-      console.log("💬 Nhận phản hồi lời mời kết bạn (sender):", data);
 
       // ✅ Nếu được accept, active lại conversation
       if (data.response === "accepted" && data.responderId) {
@@ -407,8 +403,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     // ✅ Event này dành cho NGƯỜI XỬ LÝ (responder)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socketService.onFriendRequestProcessed((data: any) => {
-      console.log("✅ Đã xử lý lời mời kết bạn (responder):", data);
-
       // ✅ Nếu accept, active lại conversation (dùng senderId từ friendRequest)
       if (
         data.friendRequest?.response === "accepted" &&
@@ -426,10 +420,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         );
 
         if (conversationToActivate && !conversationToActivate.isActive) {
-          console.log(
-            "🔓 Active lại conversation với user vừa được accept:",
-            conversationToActivate._id
-          );
+
           conversationStore._updateConversation(conversationToActivate._id, {
             isActive: true,
           });
@@ -445,8 +436,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     });
 
     // Lắng nghe khi friend request bị hủy
-    socketService.onFriendRequestCancelled((data) => {
-      console.log("🚫 Lời mời kết bạn đã bị hủy:", data);
+    socketService.onFriendRequestCancelled(() => {
       // Refresh danh sách requests
       get().getFriendRequests();
 
@@ -455,7 +445,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     // Lắng nghe friend request được gửi thành công
     socketService.onFriendRequestSent((data) => {
-      console.log("📤 Đã gửi lời mời kết bạn:", data);
       if (data.success) {
         // Refresh sent requests
         get().getSentRequests();
@@ -467,13 +456,11 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     // Lắng nghe lỗi friend request
     socketService.onFriendRequestError((data) => {
-      console.log("❌ Lỗi khi xử lý lời mời kết bạn:", data);
       toast.error(data.message || "Có lỗi xảy ra");
     });
 
     // Lắng nghe khi hủy friend request thành công
     socketService.onCancelFriendRequestSuccess((data) => {
-      console.log("✅ Đã hủy lời mời kết bạn thành công:", data);
       if (data.success) {
         // Refresh danh sách sent requests
         get().getSentRequests();
@@ -483,7 +470,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     // Lắng nghe khi friend bị xóa
     socketService.onFriendRemoved((data) => {
-      console.log("🗑️ Bạn bè đã bị xóa:", data);
 
       // ✅ Đánh dấu conversation với user này là không active
       const conversationStore = useConversationStore.getState();
@@ -493,10 +479,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       );
 
       if (conversationToDisable) {
-        console.log(
-          "� Đánh dấu conversation không active với user đã unfriend:",
-          conversationToDisable._id
-        );
+
         conversationStore._updateConversation(conversationToDisable._id, {
           isActive: false,
         });
@@ -513,7 +496,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     // Lắng nghe khi xóa friend thành công
     socketService.onRemoveFriendSuccess((data) => {
-      console.log("✅ Đã xóa bạn bè thành công:", data);
       if (data.success) {
         // ✅ Đánh dấu conversation với user này là không active
         const conversationStore = useConversationStore.getState();
@@ -526,10 +508,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
           );
 
           if (conversationToDisable) {
-            console.log(
-              "� Đánh dấu conversation không active với user đã unfriend:",
-              conversationToDisable._id
-            );
+
             conversationStore._updateConversation(conversationToDisable._id, {
               isActive: false,
             });
@@ -544,20 +523,17 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     // Lắng nghe lỗi khi xóa friend
     socketService.onRemoveFriendError((data) => {
-      console.log("❌ Lỗi khi xóa bạn bè:", data);
       toast.error(data.message || "Không thể xóa bạn bè");
       // Refresh để đồng bộ lại UI
       get().getFriendsList();
     });
 
-    console.log("✅ Đã thiết lập xong tất cả các listener Socket cho bạn bè");
 
     // 🏁 Đánh dấu listeners đã được setup
     set({ _listenersSetup: true });
   },
 
   removeSocketListeners: () => {
-    console.log("🧹 Đang xóa các listener Socket liên quan đến bạn bè...");
     // Chỉ xóa friend-related listeners, không xóa core connection listeners
     socketService.removeListener("RECEIVE_FRIEND_REQUEST");
     socketService.removeListener("FRIEND_REQUEST_RESPONSE");
@@ -576,6 +552,5 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     // 🔄 Reset setup flag
     set({ _listenersSetup: false });
-    console.log("✅ Đã xóa xong các listener Socket liên quan đến bạn bè");
   },
 }));

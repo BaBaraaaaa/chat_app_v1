@@ -21,8 +21,6 @@ export const registerMessageHandler = (
   const messageController = new MessageController();
   const conversationController = new ConversationController();
 
-  console.log(`💬 Message handlers đã được đăng ký cho socket: ${socket.id}`);
-
   // 📨 Gửi tin nhắn
   socket.on("SEND_MESSAGE", async (data: {
     conversationId: string;
@@ -32,12 +30,9 @@ export const registerMessageHandler = (
     attachments?: any[];
     replyTo?: string;
   }) => {
-    console.log(`🔵 SEND_MESSAGE received from socket ${socket.id}:`, data);
     try {
       const senderId = socket.data.userId;
-      console.log(`🔵 Sender ID: ${senderId}`);
       if (!senderId) {
-        console.error("❌ No userId in socket.data");
         socket.emit("MESSAGE_ERROR", {
           success: false,
           message: "Người dùng chưa được xác thực."
@@ -55,7 +50,6 @@ export const registerMessageHandler = (
           success: false,
           message: error.message || "Bạn chỉ có thể nhắn tin với người trong danh sách bạn bè"
         });
-        console.log(`❌ Friendship validation failed: ${senderId} -> ${receiverId}`);
         return;
       }
 
@@ -74,8 +68,6 @@ export const registerMessageHandler = (
         const roomName = `conversation_${conversationId}`;
         
         // ✅ Log để debug
-        console.log(`📢 Broadcasting NEW_MESSAGE to room: ${roomName}`);
-        console.log(`👥 Clients in room:`, io.sockets.adapter.rooms.get(roomName)?.size || 0);
         
         // ✅ Broadcast NEW_MESSAGE cho TẤT CẢ clients trong conversation room
         io.to(roomName).emit("NEW_MESSAGE", {
@@ -83,25 +75,54 @@ export const registerMessageHandler = (
           conversationId
         });
 
-        // ✅ Đảm bảo receiver nhận được message ngay cả khi chưa join room
-        // (Trường hợp conversation mới tạo, receiver chưa có trong list nên chưa join room)
-        const receiver = onlineUsers.find(u => u.userId === receiverId);
-        if (receiver && receiver.socketId !== socket.id) {
-          console.log(`📤 Sending NEW_MESSAGE directly to receiver: ${receiverId}`);
-          io.to(receiver.socketId).emit("NEW_MESSAGE", {
-            message: result.data,
-            conversationId
-          });
+        // ✅ Gửi notification cho TẤT CẢ participants ngay cả khi chưa join room
+        try {
+          const conversationResult = await conversationController.getConversationById(
+            conversationId,
+            senderId
+          );
+          
+          if (conversationResult.success && conversationResult.data?.participants) {
+            for (const participant of conversationResult.data.participants) {
+              const participantId = participant._id?.toString();
+              
+              if (participantId && participantId !== senderId) {
+                const participantSocket = onlineUsers.find(u => u.userId === participantId);
+                
+                if (participantSocket) {
+                  // ✅ Safe way to get unreadCount
+                  let unreadCount = 0;
+                  if (conversationResult.data.unreadCount) {
+                    if (typeof conversationResult.data.unreadCount.get === 'function') {
+                      // It's a Map
+                      unreadCount = (conversationResult.data.unreadCount.get(participantId) || 0) + 1;
+                    } else if (typeof conversationResult.data.unreadCount === 'object') {
+                      // It's an object
+                      unreadCount = (conversationResult.data.unreadCount[participantId] || 0) + 1;
+                    }
+                  } else {
+                    unreadCount = 1; // First unread message
+                  }
+                  
+                  io.to(participantSocket.socketId).emit("NEW_MESSAGE_NOTIFICATION", {
+                    message: result.data,
+                    conversation: conversationResult.data,
+                    unreadCount: unreadCount,
+                    from: 'notification'
+                  });
+                }
+              }
+            }
+          }
+        } catch (error) {
+          // Silent error handling for notifications
         }
 
-        // ✅ Xác nhận riêng cho người gửi
         socket.emit("MESSAGE_SENT", {
           success: true,
           message: result.message,
           data: result.data
         });
-
-        console.log(`✅ Message sent from ${senderId} to ${receiverId} in conversation ${conversationId}`);
       } else {
         socket.emit("MESSAGE_ERROR", {
           success: false,
@@ -109,7 +130,6 @@ export const registerMessageHandler = (
         });
       }
     } catch (error) {
-      console.error("Lỗi gửi tin nhắn qua socket:", error);
       socket.emit("MESSAGE_ERROR", {
         success: false,
         message: "Không thể gửi tin nhắn."
@@ -144,7 +164,6 @@ export const registerMessageHandler = (
 
       socket.emit("MESSAGES_LIST", result);
 
-      console.log(`📬 Đã gửi ${result.data?.messages?.length || 0} tin nhắn cho user ${userId}`);
     } catch (error) {
       console.error("Lỗi lấy tin nhắn qua socket:", error);
       socket.emit("MESSAGES_ERROR", {
@@ -187,7 +206,6 @@ export const registerMessageHandler = (
               readBy: userId,
               readAt: message.readAt
             });
-            console.log(`✅ Thông báo tin nhắn ${messageId} đã được đọc tới ${senderId}`);
           }
         }
       } else {
@@ -222,7 +240,6 @@ export const registerMessageHandler = (
 
       if (result.success) {
         socket.emit("MARK_ALL_READ_SUCCESS", result);
-        console.log(`✅ User ${userId} đã đọc tất cả tin nhắn trong conversation ${conversationId}`);
       } else {
         socket.emit("MARK_ALL_READ_ERROR", result);
       }
@@ -282,19 +299,16 @@ export const registerMessageHandler = (
                 updatedAt: updatedConversation.data.updatedAt
               }
             });
-            console.log(`✅ Emitted CONVERSATION_UPDATED with new lastMessage`);
           }
         }
 
-        console.log(`🗑️ User ${userId} đã xóa tin nhắn ${messageId}`);
       } else {
         socket.emit("DELETE_MESSAGE_ERROR", result);
       }
     } catch (error) {
-      console.error("Lỗi xóa tin nhắn qua socket:", error);
-      socket.emit("DELETE_MESSAGE_ERROR", {
+      socket.emit("MESSAGE_ERROR", {
         success: false,
-        message: "Không thể xóa tin nhắn."
+        message: "Không thể gửi tin nhắn."
       });
     }
   });
@@ -332,7 +346,6 @@ export const registerMessageHandler = (
           });
         }
 
-        console.log(`✏️ User ${userId} đã chỉnh sửa tin nhắn ${messageId}`);
       } else {
         socket.emit("EDIT_MESSAGE_ERROR", result);
       }
@@ -419,7 +432,6 @@ export const registerMessageHandler = (
   }) => {
     const { conversationId } = data;
     socket.join(`conversation_${conversationId}`);
-    console.log(`🔗 Socket ${socket.id} joined conversation ${conversationId}`);
   });
 
   // 🚪 Leave conversation room
@@ -428,6 +440,5 @@ export const registerMessageHandler = (
   }) => {
     const { conversationId } = data;
     socket.leave(`conversation_${conversationId}`);
-    console.log(`🚪 Socket ${socket.id} left conversation ${conversationId}`);
   });
 };

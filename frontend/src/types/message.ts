@@ -29,6 +29,38 @@ export const ConversationType = {
 
 export type ConversationType = typeof ConversationType[keyof typeof ConversationType];
 
+// ==================== NOTIFICATION TYPES ====================
+
+export interface MessageNotificationData {
+  message: Message;
+  conversation: Conversation;
+  unreadCount: number;
+  from: 'notification' | 'room';
+}
+
+export interface TypingNotificationData {
+  conversationId: string;
+  userId: string;
+  isTyping: boolean;
+  user: {
+    _id: string;
+    displayName: string;
+    username: string;
+    avatarUrl?: string;
+  };
+}
+
+export interface MessageReadNotificationData {
+  conversationId: string;
+  messageId: string;
+  readAt: string;
+  readBy: {
+    _id: string;
+    displayName: string;
+    username: string;
+  };
+}
+
 // ==================== MESSAGE TYPES ====================
 
 export interface MessageAttachment {

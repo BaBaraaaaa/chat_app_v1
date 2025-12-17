@@ -11,7 +11,8 @@ import { useAuthStore } from "./useAuthStore";
 import type {
     Message,
     SendMessagePayload,
-    UserTypingResponse
+    UserTypingResponse,
+    MessageNotificationData
 } from "@/types/message";
 
 interface MessageState {
@@ -189,22 +190,10 @@ export const useMessageStore = create<MessageState>((set, get) => ({
      * Setup Socket listeners
      */
     setupSocketListeners: () => {
-        console.log("🔧 Đang thiết lập message listeners - _listenersSetup:", get()._listenersSetup);
-        
         if (get()._listenersSetup) {
-            console.log("⚠️ Message listeners đã được setup, bỏ qua...");
             return;
         }
-
-        console.log("🔧 Đang đăng ký các listener Socket cho tin nhắn...");
-
-        // Listen for message sent success
-        messageService.onMessageSent((data) => {
-            console.log("✅ Đã gửi tin nhắn thành công:", data);
-        });
-
-        // Listen for new message (real-time)
-        console.log("🎧 Đang register listener NEW_MESSAGE...");
+        // Listen for new message (real-time trong conversation room)
         messageService.onNewMessage((data) => {
             get()._addMessage(data.conversationId, data.message);
 
@@ -220,7 +209,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 // ✅ Nếu conversation chưa có trong list (conversation mới tạo chưa có message)
                 // → Fetch lại conversations để lấy conversation này
                 if (!conversation) {
-                    console.log("⚠️ Conversation không tồn tại trong store, fetching lại conversations...");
                     conversationStore.getConversations();
                     return;
                 }
@@ -249,7 +237,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                     // hoặc fetch lại từ backend. Ở đây ta tăng 1 để sync với backend
                     const currentUnreadCount = conversation?.unreadCount || 0;
                     updates.unreadCount = currentUnreadCount + 1;
-                    console.log("🔵 Viewing conversation - backend increased unreadCount, frontend sync:", updates.unreadCount);
                 }
                 
                 conversationStore._updateConversation(data.conversationId, updates);
@@ -261,7 +248,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 );
                 
                 conversationStore._setConversations(sorted);
-                console.log("✅ Updated sidebar", { isViewingConversation, updates });
             } catch (error) {
                 console.error("❌ Lỗi khi cập nhật sidebar:", error);
             }
@@ -269,13 +255,11 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         // Listen for messages list
         messageService.onMessagesList((data) => {
-            console.log("📬 Nhận được danh sách tin nhắn:", data);
             if (data.success && data.data) {
                 const conversationId = data.data.messages[0]?.conversationId;
                 if (conversationId) {
                     // Filter out deleted messages
                     const activeMessages = data.data.messages.filter(msg => !msg.isDeleted);
-                    console.log(`🔍 Filtered ${data.data.messages.length - activeMessages.length} deleted messages`);
                     
                     get()._setMessages(
                         conversationId,
@@ -293,7 +277,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         // Listen for message read
         messageService.onMessageRead((data) => {
-            console.log("👁️ Tin nhắn đã được đọc:", data);
             get()._updateMessage(data.messageId, {
                 status: "read",
                 readAt: data.readAt
@@ -302,7 +285,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         // Listen for mark all read success
         messageService.onMarkAllReadSuccess((data) => {
-            console.log("✅ Đã đánh dấu tất cả tin nhắn là đã đọc:", data);
             if (data.success) {
                 toast.success("Đã đọc tất cả tin nhắn");
             }
@@ -310,13 +292,11 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         // Listen for message deleted
         messageService.onMessageDeleted((data) => {
-            console.log("🗑️ Tin nhắn đã bị xóa:", data);
             get()._removeMessage(data.messageId);
         });
 
         // Listen for delete success
         messageService.onDeleteMessageSuccess((data) => {
-            console.log("✅ Xóa tin nhắn thành công:", data);
             if (data.success) {
                 toast.success("Đã xóa tin nhắn");
             }
@@ -324,7 +304,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         // Listen for message edited
         messageService.onMessageEdited((data) => {
-            console.log("✏️ Tin nhắn đã được chỉnh sửa:", data);
             get()._updateMessage(data.messageId, {
                 content: data.newContent,
                 isEdited: true
@@ -333,7 +312,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         // Listen for edit success
         messageService.onEditMessageSuccess((data) => {
-            console.log("✅ Chỉnh sửa tin nhắn thành công:", data);
             if (data.success) {
                 toast.success("Đã chỉnh sửa tin nhắn");
             }
@@ -344,19 +322,40 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             get()._updateTypingUsers(data);
         });
 
+        // Listen for global message notifications (không cần join room)
+        messageService.onMessageNotification((data: MessageNotificationData) => {
+            const { message, conversation, unreadCount } = data;
+            const conversationId = conversation._id;
+            const currentUser = useAuthStore.getState().user;
+            
+            // Bỏ qua notification từ chính mình
+            if (message.senderId._id === currentUser?._id) {
+                return;
+            }
+
+            // Update conversation với thông tin mới
+            const conversationStore = useConversationStore.getState();
+            conversationStore._updateConversation(conversationId, {
+                lastMessage: {
+                    content: message.content,
+                    senderId: message.senderId,
+                    sentAt: message.createdAt,
+                    type: message.type
+                },
+                unreadCount: unreadCount
+            });
+        });
+
         // Listen for errors
         messageService.onMessageError((data) => {
-            console.error("❌ Lỗi tin nhắn:", data);
             toast.error(data.message);
         });
 
         messageService.onMessagesError((data) => {
-            console.error("❌ Lỗi khi lấy danh sách tin nhắn:", data);
             toast.error(data.message);
             set({ loading: false });
         });
 
-        console.log("✅ Đã thiết lập xong tất cả các listener cho tin nhắn");
         set({ _listenersSetup: true });
     },
 
@@ -364,10 +363,8 @@ export const useMessageStore = create<MessageState>((set, get) => ({
      * Remove Socket listeners
      */
     removeSocketListeners: () => {
-        console.log("🧹 Đang xóa các listener cho tin nhắn...");
         messageService.removeAllListeners();
         set({ _listenersSetup: false });
-        console.log("✅ Đã xóa xong các listener cho tin nhắn");
     },
 
     // ==================== INTERNAL STATE SETTERS ====================

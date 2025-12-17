@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Box, Typography, Paper, Avatar, IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { MoreVert, Edit, Delete, Reply, Check, DoneAll } from '@mui/icons-material';
 import type { Message as MessageType } from '@/types/message';
@@ -13,7 +13,7 @@ interface MessageItemProps {
   onReply?: (messageId: string) => void;
 }
 
-export default function MessageItemMui({ 
+ function MessageItemMui({ 
   message, 
   isOwn, 
   senderName,
@@ -25,13 +25,13 @@ export default function MessageItemMui({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
-  const handleMenuClose = () => {
+  const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
-  };
+  }, []);
 
   const formatTime = (dateString: string) => {
     if (!dateString) return '';
@@ -194,3 +194,5 @@ export default function MessageItemMui({
     </Box>
   );
 }
+
+export default memo(MessageItemMui);

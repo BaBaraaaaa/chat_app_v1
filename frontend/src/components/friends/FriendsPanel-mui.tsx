@@ -20,9 +20,7 @@ export default function FriendsPanelMui() {
     // Fetch initial data chỉ 1 lần khi component mount
     const initializeData = async () => {
       if (user) {
-        console.log('🔄 Fetching initial friends data...');
         await Promise.all([getFriendRequests(), getSentRequests(), getFriendsList()]);
-        console.log('✅ Initial friends data loaded');
       }
     };
 
@@ -39,7 +37,6 @@ export default function FriendsPanelMui() {
   // Setup Socket listeners riêng biệt
   useEffect(() => {
     if (isConnected && user) {
-      console.log('🔧 Setting up friend socket listeners...');
       setupSocketListeners();
     }
 

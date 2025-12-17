@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, useTheme, useMediaQuery } from '@mui/material';
 import NavigationSidebarMui from '../navigation/NavigationSidebar-mui';
 import MobileNavigationMui from '../navigation/MobileNavigation-mui';
 import type { ReactNode } from 'react';
@@ -11,23 +11,41 @@ interface LayoutProps {
 }
 
 export default function LayoutMui({ children, activeView, onViewChange, notificationCount }: LayoutProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      height: '100vh', 
+      overflow: 'hidden',
+      flexDirection: { xs: 'column', md: 'row' }
+    }}>
       {/* Desktop Navigation */}
-      <NavigationSidebarMui
-        activeView={activeView}
-        onViewChange={onViewChange}
-        notificationCount={notificationCount}
-      />
-
-      {/* Main Content */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Mobile Navigation */}
-        <MobileNavigationMui
+      {!isMobile && (
+        <NavigationSidebarMui
           activeView={activeView}
           onViewChange={onViewChange}
           notificationCount={notificationCount}
         />
+      )}
+
+      {/* Main Content */}
+      <Box sx={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        overflow: 'hidden',
+        height: { xs: 'calc(100vh - 64px)', md: '100vh' } // Account for mobile AppBar
+      }}>
+        {/* Mobile Navigation */}
+        {isMobile && (
+          <MobileNavigationMui
+            activeView={activeView}
+            onViewChange={onViewChange}
+            notificationCount={notificationCount}
+          />
+        )}
 
         {/* Content Area */}
         <Box sx={{ flex: 1, overflow: 'hidden' }}>

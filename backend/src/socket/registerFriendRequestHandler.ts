@@ -59,7 +59,6 @@ export const registerFriendRequestHandler = (
             data: result.data
           });
 
-          console.log(`✅ ${fromUserId} đã gửi lời mời kết bạn cho ${targetUserId}`);
         } else {
           // ❌ Thông báo lỗi cho người gửi
           socket.emit("FRIEND_REQUEST_ERROR", { 
@@ -140,10 +139,6 @@ export const registerFriendRequestHandler = (
               "Bạn đã từ chối lời mời kết bạn!",
             data: result.data
           });
-
-          console.log(
-            `✅ ${userId} ${response === "accepted" ? "chấp nhận" : "từ chối"} lời mời của ${fromUserId}`
-          );
         } else {
           socket.emit("RESPOND_FRIEND_REQUEST_ERROR", {
             success: false,
@@ -202,7 +197,6 @@ export const registerFriendRequestHandler = (
             data: result.data
           });
 
-          console.log(`🗑️ ${userId} đã hủy lời mời kết bạn ${requestId}`);
         } else {
           socket.emit("CANCEL_FRIEND_REQUEST_ERROR", {
             success: false,
@@ -329,7 +323,6 @@ export const registerFriendRequestHandler = (
             data: result.data
           });
 
-          console.log(`🗑️ ${userId} đã xóa bạn bè ${friendId}`);
         } else {
           socket.emit("REMOVE_FRIEND_ERROR", {
             success: false,

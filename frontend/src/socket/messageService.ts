@@ -3,6 +3,7 @@
  * Handles real-time message communication with backend
  */
 
+import { toast } from 'sonner';
 import { socketService } from './socketService';
 import type {
     SendMessagePayload,
@@ -28,7 +29,8 @@ import type {
     JoinConversationPayload,
     LeaveConversationPayload,
     MessageErrorResponse,
-    SocketEventCallback
+    SocketEventCallback,
+    MessageNotificationData
 } from '@/types/message';
 
 class MessageService {
@@ -60,9 +62,8 @@ class MessageService {
     getMessages(payload: GetMessagesPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('GET_MESSAGES', payload);
-            console.log('📤 Đang lấy tin nhắn, conversationId:', payload.conversationId);
         } else {
-            console.warn('⚠️ Socket chưa kết nối, không thể lấy tin nhắn');
+            toast.warning('⚠️ Socket chưa kết nối, không thể lấy tin nhắn');
         }
     }
 
@@ -72,9 +73,8 @@ class MessageService {
     markMessageAsRead(payload: MarkMessageReadPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('MARK_MESSAGE_READ', payload);
-            console.log('📤 Đánh dấu tin nhắn đã đọc:', payload.messageId);
         } else {
-            console.warn('⚠️ Socket chưa kết nối, không thể đánh dấu đã đọc');
+            toast.warning('⚠️ Socket chưa kết nối, không thể đánh dấu đã đọc');
         }
     }
 
@@ -84,9 +84,8 @@ class MessageService {
     markAllAsRead(payload: MarkAllReadPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('MARK_ALL_READ', payload);
-            console.log('📤 Đánh dấu tất cả tin nhắn đã đọc, conversationId:', payload.conversationId);
         } else {
-            console.warn('⚠️ Socket chưa kết nối, không thể đánh dấu đã đọc');
+            toast.warning('⚠️ Socket chưa kết nối, không thể đánh dấu đã đọc');
         }
     }
 
@@ -96,9 +95,8 @@ class MessageService {
     deleteMessage(payload: DeleteMessagePayload): void {
         if (socketService.isConnected()) {
             socketService.emit('DELETE_MESSAGE', payload);
-            console.log('📤 Xóa tin nhắn:', payload.messageId);
         } else {
-            console.warn('⚠️ Socket chưa kết nối, không thể xóa tin nhắn');
+            toast.warning('⚠️ Socket chưa kết nối, không thể xóa tin nhắn');
         }
     }
 
@@ -108,9 +106,8 @@ class MessageService {
     editMessage(payload: EditMessagePayload): void {
         if (socketService.isConnected()) {
             socketService.emit('EDIT_MESSAGE', payload);
-            console.log('📤 Chỉnh sửa tin nhắn:', payload.messageId);
         } else {
-            console.warn('⚠️ Socket chưa kết nối, không thể chỉnh sửa tin nhắn');
+            toast.warning('⚠️ Socket chưa kết nối, không thể chỉnh sửa tin nhắn');
         }
     }
 
@@ -120,7 +117,6 @@ class MessageService {
     startTyping(payload: TypingPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('TYPING_START', payload);
-            console.log('⌨️ Bắt đầu typing, conversationId:', payload.conversationId);
         }
     }
 
@@ -130,7 +126,6 @@ class MessageService {
     stopTyping(payload: TypingPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('TYPING_STOP', payload);
-            console.log('⌨️ Dừng typing, conversationId:', payload.conversationId);
         }
     }
 
@@ -140,9 +135,8 @@ class MessageService {
     getUnreadCount(payload?: GetUnreadCountPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('GET_UNREAD_COUNT', payload);
-            console.log('📤 Lấy số lượng tin nhắn chưa đọc');
         } else {
-            console.warn('⚠️ Socket chưa kết nối, không thể lấy số lượng chưa đọc');
+            toast.warning('⚠️ Socket chưa kết nối, không thể lấy số lượng chưa đọc');
         }
     }
 
@@ -152,7 +146,6 @@ class MessageService {
     joinConversation(payload: JoinConversationPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('JOIN_CONVERSATION', payload);
-            console.log('🔗 Tham gia cuộc trò chuyện:', payload.conversationId);
         }
     }
 
@@ -162,7 +155,6 @@ class MessageService {
     leaveConversation(payload: LeaveConversationPayload): void {
         if (socketService.isConnected()) {
             socketService.emit('LEAVE_CONVERSATION', payload);
-            console.log('🚪 Rời khỏi cuộc trò chuyện:', payload.conversationId);
         }
     }
 
@@ -253,6 +245,13 @@ class MessageService {
     }
 
     /**
+     * Listen for message notification (global, không cần join room)
+     */
+    onMessageNotification(callback: SocketEventCallback<MessageNotificationData>): void {
+        socketService.on('NEW_MESSAGE_NOTIFICATION', callback as (...args: unknown[]) => void);
+    }
+
+    /**
      * Listen for message errors
      */
     onMessageError(callback: SocketEventCallback<MessageErrorResponse>): void {
@@ -319,6 +318,7 @@ class MessageService {
         socketService.removeListener('MESSAGE_EDITED');
         socketService.removeListener('USER_TYPING');
         socketService.removeListener('UNREAD_COUNT');
+        socketService.removeListener('NEW_MESSAGE_NOTIFICATION');
         socketService.removeListener('MESSAGE_ERROR');
         socketService.removeListener('MESSAGES_ERROR');
         socketService.removeListener('MARK_READ_ERROR');
@@ -326,7 +326,6 @@ class MessageService {
         socketService.removeListener('DELETE_MESSAGE_ERROR');
         socketService.removeListener('EDIT_MESSAGE_ERROR');
         socketService.removeListener('UNREAD_COUNT_ERROR');
-        console.log('🧹 Đã xóa tất cả message listeners');
     }
 
     /**

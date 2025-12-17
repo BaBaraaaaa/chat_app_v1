@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { toast } from 'sonner';
 
 export const useAuthInit = () => {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -22,15 +23,16 @@ export const useAuthInit = () => {
             }
           } catch {
             // Nếu refresh thất bại, có nghĩa là user chưa đăng nhập
-            console.log('❌ Làm mới token thất bại, người dùng chưa đăng nhập');
+            toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
           }
         } else {
-          console.log('⏭️ Bỏ qua khởi tạo xác thực - người dùng đã đăng xuất hoặc đã xác thực');
+          // Bỏ qua khởi tạo xác thực nếu người dùng đã đăng xuất hoặc đã xác thực
+          return;
         }
       } catch (error) {
-        console.log('❌ Khởi tạo xác thực thất bại:', error);
+        toast.error('Đã xảy ra lỗi trong quá trình khởi tạo xác thực.');
+        throw error;
       } finally {
-        console.log('✅ Khởi tạo xác thực hoàn tất');
         setIsInitialized(true);
       }
     };
