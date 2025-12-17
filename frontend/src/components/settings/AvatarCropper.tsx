@@ -453,14 +453,7 @@ const AvatarCropper = ({
               minCropBoxWidth={100}
               minCropBoxHeight={100}
               ready={() => {
-                console.log('Cropper ready');
                 setCropperReady(true);
-              }}
-              onInitialized={(instance) => {
-                console.log('Cropper initialized', instance);
-              }}
-              onError={(error) => {
-                console.error('Cropper error:', error);
               }}
             />
           </Box>

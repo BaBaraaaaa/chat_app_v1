@@ -31,7 +31,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       return { success: true };
     } catch (error) {
-      console.log(error);
       toast.error("Đăng ký thất bại! Vui lòng thử lại.");
       return { success: false, error };
     } finally {
@@ -50,7 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ hasLoggedOut: false }); // Reset logout flag khi đăng nhập thành công
       toast.success("Đăng nhập thành công");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Đăng nhập thất bại! Vui lòng kiểm tra lại thông tin.");
     } finally {
       set({ loading: false });
@@ -61,7 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: true });
       await authService.signOut();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Đăng xuất thất bại! Vui lòng thử lại.");
     } finally {
       get().clearState();
@@ -75,7 +74,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await authService.fetchMe();
       set({ user });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       set({ user: null });
       toast.error("Lấy thông tin người dùng thất bại! Vui lòng thử lại.");
     } finally {
@@ -85,7 +84,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refresh: async () => {
     const { hasLoggedOut } = get();
     if (hasLoggedOut) {
-      console.log("Người dùng đã đăng xuất, không làm mới token");
       return null;
     }
     try {
@@ -94,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       get().setAccessToken(accessToken);
       return accessToken;
     } catch (error) {
-      console.log(error);
+      console.error(error);
       get().clearState();
       toast.error("Phiên đã hết hạn! Vui lòng đăng nhập lại.");
       return null;

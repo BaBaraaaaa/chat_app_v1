@@ -16,7 +16,6 @@ export const registerConversationHandler = (
 ) => {
   const conversationController = new ConversationController();
 
-  console.log(`💬 Conversation handlers đã được đăng ký cho socket: ${socket.id}`);
 
   // 🆕 Tạo hoặc lấy conversation với user khác
   socket.on("GET_OR_CREATE_CONVERSATION", async (data: {
@@ -45,7 +44,6 @@ export const registerConversationHandler = (
         // Join conversation room
         socket.join(`conversation_${result.data._id}`);
         
-        console.log(`✅ Conversation created/retrieved between ${userId} and ${otherUserId}`);
       } else {
         socket.emit("CONVERSATION_ERROR", result);
       }
@@ -74,7 +72,6 @@ export const registerConversationHandler = (
 
       socket.emit("CONVERSATIONS_LIST", result);
 
-      console.log(`📬 Đã gửi ${result.data?.length || 0} conversations cho user ${userId}`);
     } catch (error) {
       console.error("Lỗi lấy danh sách conversations qua socket:", error);
       socket.emit("CONVERSATIONS_ERROR", {
@@ -142,7 +139,6 @@ export const registerConversationHandler = (
 
       socket.emit("SEARCH_CONVERSATIONS_RESULT", result);
 
-      console.log(`🔍 User ${userId} tìm kiếm: "${query}" - Tìm thấy ${result.data?.length || 0} kết quả`);
     } catch (error) {
       console.error("Lỗi tìm kiếm conversations qua socket:", error);
       socket.emit("SEARCH_CONVERSATIONS_ERROR", {
@@ -179,7 +175,6 @@ export const registerConversationHandler = (
         // Leave conversation room
         socket.leave(`conversation_${conversationId}`);
         
-        console.log(`🗑️ User ${userId} đã xóa conversation ${conversationId}`);
       } else {
         socket.emit("DELETE_CONVERSATION_ERROR", result);
       }
@@ -208,7 +203,6 @@ export const registerConversationHandler = (
 
       socket.emit("TOTAL_UNREAD_COUNT", result);
 
-      console.log(`📊 User ${userId} có ${result.data?.totalUnread || 0} tin nhắn chưa đọc`);
     } catch (error) {
       console.error("Lỗi lấy tổng unread count qua socket:", error);
       socket.emit("TOTAL_UNREAD_COUNT_ERROR", {
@@ -241,7 +235,6 @@ export const registerConversationHandler = (
 
       if (result.success) {
         socket.emit("RESET_UNREAD_COUNT_SUCCESS", result);
-        console.log(`✅ Reset unread count cho user ${userId} trong conversation ${conversationId}`);
       } else {
         socket.emit("RESET_UNREAD_COUNT_ERROR", result);
       }

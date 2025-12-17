@@ -1,4 +1,54 @@
 import type{ Friend } from '../type/store';
+
+// ==================== SOCKET CORE TYPES ====================
+
+export interface SocketInstance {
+  // Core methods
+  on: <T>(event: string, callback: (data: T) => void) => void;
+  off: <T>(event: string, callback?: (data: T) => void) => void;
+  emit: <T>(event: string, data?: T) => void;
+  
+  // Connection status
+  connected: boolean;
+  disconnected: boolean;
+  
+  // Socket ID
+  id: string;
+  
+  // Data attached to socket
+  data: {
+    userId?: string;
+    username?: string;
+    [key: string]: string | undefined;
+  };
+}
+
+
+
+export interface SocketService {
+  // Connection methods
+  connect: (token?: string) => Promise<boolean>;
+  disconnect: () => void;
+  isConnected: () => boolean;
+  
+  // Event methods
+  on: <T>(event: string, callback: SocketEventCallback<T>) => void;
+  off: <T>(event: string, callback?: SocketEventCallback<T>) => void;
+  emit: <T>(event: string, data?: T) => void;
+  
+  // Listener management
+  removeListener: (event: string, callback?: SocketEventCallback) => void;
+  removeAllListeners: () => void;
+}
+
+export interface SocketError {
+  message: string;
+  code?: string | number;
+  type?: 'connection' | 'authentication' | 'timeout' | 'server';
+}
+
+// ==================== FRIEND REQUEST TYPES ====================
+
 // Socket.IO Event Types
 export interface FriendRequestData {
   fromUserId: string;

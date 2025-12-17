@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Box } from "@mui/material";
+import { Box, useTheme, useMediaQuery } from "@mui/material";
 import ConversationListMui from "./ConversationList-mui";
 import ChatAreaMui from "./ChatArea-mui";
 import { NewChatDialogMui } from "./NewChatDialog-mui";
@@ -18,6 +18,9 @@ const ChatPanel = () => {
   const [newChatOpen, setNewChatOpen] = useState(false);
   const joinedConversationsRef = useRef<Set<string>>(new Set());
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const { user } = useAuthStore();
   const { isConnected, onlineUsers } = useSocketStore();
   const { friends, getFriendsList, loading: friendsLoading } = useFriendStore();
@@ -38,19 +41,8 @@ const ChatPanel = () => {
     }
   }, [isConnected, user, getConversations, getFriendsList]);
 
-  // ✅ Join TẤT CẢ conversation rooms khi có conversations
-  useEffect(() => {
-    if (conversations.length > 0 && isConnected) {
-      conversations.forEach((conv) => {
-        // Chỉ join nếu chưa join trước đó
-        if (!joinedConversationsRef.current.has(conv._id)) {
-          joinConversation(conv._id);
-          joinedConversationsRef.current.add(conv._id);
-          console.log("✅ Joined room for conversation:", conv._id);
-        }
-      });
-    }
-  }, [conversations, isConnected, joinConversation]);
+  // 🚫 REMOVED: Auto-join tất cả conversations
+  // ✅ NEW: Chỉ join conversation khi user thực sự mở nó
 
   // Load messages khi chọn conversation
   useEffect(() => {
@@ -93,7 +85,6 @@ const ChatPanel = () => {
 
     const currentMessages = messages[selectedConversation._id] || [];
     if (currentMessages.length === 0) {
-      console.log("🔴 Skip auto-mark-read: no messages");
       return;
     }
 
@@ -106,29 +97,19 @@ const ChatPanel = () => {
       const currentConv = conversations.find(
         (c) => c._id === selectedConversation._id
       );
-      console.log(
-        "🔵 Current conversation unreadCount:",
-        currentConv?.unreadCount
-      );
 
       if (
         currentConv &&
         currentConv.unreadCount &&
         currentConv.unreadCount > 0
       ) {
-        console.log(
-          "📖 Đánh dấu đã đọc - tin nhắn mới trong conversation đang mở"
-        );
-
         // ✅ Cập nhật local state
         _updateConversation(selectedConversation._id, { unreadCount: 0 });
 
         // ✅ Gọi API để persist vào database
         conversationApiService.resetUnreadCount(selectedConversation._id);
       } else {
-        console.log(
-          "🔴 Skip auto-mark-read: unreadCount is 0 or conversation not found"
-        );
+        return;
       }
     }
   }, [
@@ -147,7 +128,6 @@ const ChatPanel = () => {
         (c) => c._id === selectedConversation._id
       );
       if (!stillExists) {
-        console.log("🔴 Conversation đã bị xóa, clear selection");
         setSelectedConversation(null);
         setCurrentConversation(null);
       }
@@ -160,10 +140,6 @@ const ChatPanel = () => {
   };
 
   const handleSendMessage = (content: string) => {
-    console.log("🔵 ChatPanel handleSendMessage called:", {
-      content,
-      hasConversation: !!selectedConversation,
-    });
     if (content.trim() && selectedConversation) {
       // Tìm receiverId (người nhận là participant khác không phải user)
       const receiver = selectedConversation.participants.find(
@@ -182,10 +158,7 @@ const ChatPanel = () => {
       };
       sendMessage(payload);
     } else {
-      console.log("❌ Send blocked:", {
-        hasContent: !!content.trim(),
-        hasConversation: !!selectedConversation,
-      });
+      return ;
     }
   };
 
@@ -225,6 +198,13 @@ const ChatPanel = () => {
 
   const handleNewChat = () => {
     setNewChatOpen(true);
+  };
+
+  const handleMobileBack = () => {
+    if (isMobile) {
+      setSelectedConversation(null);
+      setCurrentConversation(null);
+    }
   };
 
   const handleConversationCreated = (userId: string) => {
@@ -275,19 +255,46 @@ const ChatPanel = () => {
     <>
       {/* Chat Panel */}
       <Box
-        sx={{ display: "flex", flex: 1, overflow: "hidden", height: "100%" }}
+        sx={{ 
+          display: "flex", 
+          flex: 1, 
+          overflow: "hidden", 
+          height: "100%",
+          // position: 'relative'
+        }}
       >
-        <ConversationListMui
-          onSelectConversation={handleConversationSelect}
-          onNewChat={handleNewChat}
-        />
-        <ChatAreaMui
-          selectedContact={selectedContact}
-          messages={uiMessages}
-          onSendMessage={handleSendMessage}
-          isFriend={isFriend}
-          isActive={selectedConversation?.isActive ?? true}
-        />
+        {/* Conversation List - Desktop & Tablet */}
+        {!isMobile && (
+          <Box>
+            <ConversationListMui
+              onSelectConversation={handleConversationSelect}
+              onNewChat={handleNewChat}
+            />
+          </Box>
+        )}
+
+        {/* Mobile Conversation List */}
+        {isMobile && !selectedConversation && (
+          <Box sx={{ width: '100%' }}>
+            <ConversationListMui
+              onSelectConversation={handleConversationSelect}
+              onNewChat={handleNewChat}
+            />
+          </Box>
+        )}
+
+        {/* Chat Area */}
+        {(!isMobile || selectedConversation) && (
+            <ChatAreaMui
+              selectedContact={selectedContact}
+              messages={uiMessages}
+              onSendMessage={handleSendMessage}
+              isFriend={isFriend}
+              isActive={selectedConversation?.isActive ?? true}
+              onMobileBack={isMobile ? handleMobileBack : undefined}
+              isMobile={isMobile}
+            />
+        )}
       </Box>
 
       {/* New Chat Dialog */}

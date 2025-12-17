@@ -321,13 +321,11 @@ export class MessageService {
             type: latestMessage.type
           }
         });
-        console.log(`✅ Updated lastMessage to latest message: ${latestMessage._id}`);
       } else {
         // Không còn tin nhắn nào → Xóa lastMessage
         await Conversation.findByIdAndUpdate(conversationId, {
           $unset: { lastMessage: "" }
         });
-        console.log(`✅ Removed lastMessage (no messages left in conversation)`);
       }
 
       return {

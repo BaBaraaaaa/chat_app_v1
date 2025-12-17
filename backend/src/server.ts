@@ -94,21 +94,14 @@ registerSocketHandlers(io);
 
 // Middleware để log socket connections
 io.on('connection', (socket) => {
-  console.log(`🔌 Socket connected: ${socket.id}`);
-  console.log(`👥 Total connected clients: ${io.engine.clientsCount}`);
   
   socket.on('disconnect', (reason) => {
-    console.log(`🔌 Socket disconnected: ${socket.id}, reason: ${reason}`);
-    console.log(`👥 Total connected clients: ${io.engine.clientsCount}`);
   });
 });
 
 // Kết nối database và khởi động server
 connectDb().then(() => {
     server.listen(PORT, () => {
-        console.log(`🚀 Server đang chạy trên port ${PORT}`);
-        console.log(`🔗 Socket.IO server đã được khởi tạo`);
-        console.log(`🌐 CORS origin: ${process.env.CLIENT_URL || "http://localhost:3000"}`);
     });
 }).catch((error) => {
     console.error("❌ Lỗi kết nối database:", error);

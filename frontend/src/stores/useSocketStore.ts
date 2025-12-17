@@ -83,7 +83,6 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     
     // Prevent duplicate registration
     if (state._userRegistered) {
-      console.log('⚠️ User already registered in store, skipping...');
       return;
     }
     
@@ -97,15 +96,12 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     
     // Prevent duplicate setup
     if (state._coreListenersSetup) {
-      console.log('⚠️ Core listeners already setup, skipping...');
       return;
     }
 
-    console.log('🔧 Setting up core Socket listeners...');
     
     // Online users list - Core connection feature
     socketService.onOnlineUsersList((data: OnlineUsersListData) => {
-      console.log('👥 Online users updated:', data);
       get().updateOnlineUsers(data.data, data.count);
     });
     
@@ -115,21 +111,17 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     // Request initial online users list
     socketService.getOnlineUsers();
     
-    console.log('✅ Core Socket listeners setup complete');
   },
 
   removeCoreListeners: () => {
-    console.log('🧹 Removing core Socket listeners...');
     // Only remove core listeners
     socketService.removeListener('ONLINE_USERS_LIST');
     // Reset flag so listeners can be re-setup on reconnect
     set({ _coreListenersSetup: false });
-    console.log('✅ Core Socket listeners removed');
   },
 
   // === ONLINE USERS MANAGEMENT ===
   updateOnlineUsers: (users: string[], count: number) => {
-    console.log('👥 Updating online users:', { users, count, previousCount: get().onlineCount });
     set({ onlineUsers: users, onlineCount: count });
   }
 }));

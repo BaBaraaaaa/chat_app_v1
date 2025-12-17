@@ -29,9 +29,6 @@ cloudinary.config({
   secure: true
 });
 
-console.log('✅ Cloudinary configured successfully');
-console.log('Cloud name:', cloudName);
-console.log('API key:', apiKey.substring(0, 4) + '...');
 
 interface CloudinaryUploadResult {
   public_id: string;

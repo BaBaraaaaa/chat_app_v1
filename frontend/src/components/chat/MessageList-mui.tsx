@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useLayoutEffect, memo } from "react";
+import { useRef, useEffect, useState, useLayoutEffect, memo, useMemo, useCallback } from "react";
 import {
   Box,
   Avatar,
@@ -109,10 +109,6 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
 
         // Mark as read when at bottom and has unread messages
         if (atBottom && currentUnreadCount > 0) {
-          console.log(
-            "🔵 Marking as read - scroll at bottom, unreadCount:",
-            currentUnreadCount
-          );
           _updateConversation(conversationId, { unreadCount: 0 });
           // conversationService.resetUnreadCount({
           //   conversationId: conversationId,
@@ -145,19 +141,20 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
     ? typingUsers[conversationId]?.slice(0, 3) || []
     : [];
 
-  const handleEdit = (messageId: string) => {
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleEdit = useCallback((messageId: string) => {
     const message = messages.find((m) => m._id === messageId);
     if (message && onEdit) {
       onEdit(messageId, message.content);
     }
-  };
+  }, [messages, onEdit]);
 
-  const handleDeleteClick = (messageId: string) => {
+  const handleDeleteClick = useCallback((messageId: string) => {
     setMessageToDelete(messageId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = useCallback(() => {
     if (messageToDelete) {
       if (onDelete) {
         onDelete(messageToDelete);
@@ -167,15 +164,39 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
       setDeleteDialogOpen(false);
       setMessageToDelete(null);
     }
-  };
+  }, [messageToDelete, onDelete, deleteMessage]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     const el = scrollAreaRef.current;
     if (el) {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
       setHasNewMessages(false);
     }
-  };
+  }, []);
+
+  // Memoize rendered messages to prevent unnecessary re-renders
+  const renderedMessages = useMemo(() => {
+    return messages.map((message) => (
+      <MessageItemMui
+        key={message._id}
+        message={message}
+        isOwn={message.senderId._id === user?._id}
+        senderName={
+          message.senderId._id === user?._id
+            ? user.displayName
+            : message.senderId.displayName ||
+              message.senderId.username
+        }
+        senderAvatar={
+          message.senderId._id === user?._id
+            ? user?.avatarUrl
+            : message.senderId.avatarUrl
+        }
+        onEdit={handleEdit}
+        onDelete={handleDeleteClick}
+      />
+    ));
+  }, [messages, user, handleEdit, handleDeleteClick]);
 
   if (loading && messages.length === 0) {
     return (
@@ -215,26 +236,7 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
             </Box>
           ) : (
             <>
-              {messages.map((message) => (
-                <MessageItemMui
-                  key={message._id}
-                  message={message}
-                  isOwn={message.senderId._id === user?._id}
-                  senderName={
-                    message.senderId._id === user?._id
-                      ? user.displayName
-                      : message.senderId.displayName ||
-                        message.senderId.username
-                  }
-                  senderAvatar={
-                    message.senderId._id === user?._id
-                      ? user?.avatarUrl
-                      : message.senderId.avatarUrl
-                  }
-                  onEdit={handleEdit}
-                  onDelete={handleDeleteClick}
-                />
-              ))}
+              {renderedMessages}
 
               {typingUsersInConversation.length > 0 &&
                 typingUsersInConversation.map((_u, index) => {

@@ -47,14 +47,12 @@ export const useSocket = () => {
             
             // ✅ Setup TẤT CẢ socket listeners chỉ một lần
             if (!listenersSetupRef.current) {
-              console.log('🎧 Đang thiết lập TẤT CẢ các socket listeners (Friend, Conversation, Message)');
               setupSocketListeners();         // Friend listeners
               setupConversationListeners();   // Conversation listeners
               setupMessageListeners();        // Message listeners
               listenersSetupRef.current = true;
             }
             
-            console.log('✅ Socket đã kết nối và đăng ký người dùng:', user?.username);
           }
         })
         .catch((error) => {
@@ -63,7 +61,6 @@ export const useSocket = () => {
     }
 
     if (shouldDisconnect) {
-      console.log('🔌 Disconnecting socket for user logout');
       
       // ✅ Remove TẤT CẢ listeners
       removeSocketListeners();
@@ -97,7 +94,6 @@ export const useSocket = () => {
                            !isConnecting;
     
     if (shouldReconnect) {
-      console.log('🔄 Attempting to reconnect socket...');
       
       // Delay trước khi reconnect để tránh spam
       const reconnectTimer = setTimeout(() => {
@@ -106,7 +102,6 @@ export const useSocket = () => {
             if (success) {
               // ✅ Re-register sau khi reconnect (store có flag check rồi)
               registerUser(user._id);
-              console.log('✅ Socket reconnected and user re-registered');
             }
           })
           .catch((error) => {

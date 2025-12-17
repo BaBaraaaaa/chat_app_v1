@@ -1,4 +1,4 @@
-import {  useState } from "react";
+import { useState, memo, useMemo, useCallback } from "react";
 import {
   Box,
   List,
@@ -17,6 +17,8 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Search,
@@ -39,7 +41,7 @@ interface ConversationListProps {
   onNewChat?: () => void;
 }
 
-export default function ConversationListMui({
+function ConversationListMui({
   onSelectConversation,
   onNewChat,
 }: ConversationListProps) {
@@ -53,44 +55,33 @@ export default function ConversationListMui({
     searchConversations,
     clearSearchResults,
   } = useConversationStore();
-
+  const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [tabValue, setTabValue] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  // Debounced search để tránh quá nhiều API calls
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
 
+      // Debounce search API call
+      const timeoutId = setTimeout(() => {
+        if (query.trim()) {
+          searchConversations(query);
+        } else {
+          clearSearchResults();
+        }
+      }, 300);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim()) {
-      searchConversations(query);
-    } else {
-      clearSearchResults();
-    }
-  };
+      return () => clearTimeout(timeoutId);
+    },
+    [searchConversations, clearSearchResults]
+  );
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleArchive = () => {
-    toast.info("Tính năng tin nhắn đã lưu trữ đang được phát triển");
-    handleMenuClose();
-  };
-
-  const handleCreateGroup = () => {
-    toast.info("Tính năng tạo nhóm mới đang được phát triển");
-    handleMenuClose();
-  };
-
-  // ✅ Filter conversations để chỉ hiển thị:
-  // 1. Conversations có lastMessage (đã có tin nhắn)
-  // 2. HOẶC là currentConversation (đang mở để gửi tin nhắn)
-  const displayedConversations = (() => {
+  // ✅ Filter conversations với memoization
+  const displayedConversations = useMemo(() => {
     const baseList = searchQuery ? searchResults : conversations || [];
 
     return baseList.filter(
@@ -98,13 +89,33 @@ export default function ConversationListMui({
         conv.lastMessage || // Có tin nhắn
         (currentConversation && conv._id === currentConversation._id) // Hoặc đang được chọn
     );
-  })();
+  }, [searchQuery, searchResults, conversations, currentConversation]);
 
+  // Memoize callback functions
+  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  }, []);
 
+  const handleMenuClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
 
-  const getOtherParticipant = (conversation: Conversation) => {
-    return conversation.participants.find((p) => p._id !== user?._id);
-  };
+  const handleArchive = useCallback(() => {
+    toast.info("Tính năng tin nhắn đã lưu trữ đang được phát triển");
+    handleMenuClose();
+  }, [handleMenuClose]);
+
+  const handleCreateGroup = useCallback(() => {
+    toast.info("Tính năng tạo nhóm mới đang được phát triển");
+    handleMenuClose();
+  }, [handleMenuClose]);
+
+  const getOtherParticipant = useCallback(
+    (conversation: Conversation) => {
+      return conversation.participants.find((p) => p._id !== user?._id);
+    },
+    [user?._id]
+  );
 
   return (
     <Box
@@ -215,17 +226,30 @@ export default function ConversationListMui({
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
+              // p: { xs: 4, sm: 4 },
               p: 4,
             }}
           >
+            {/* <CircularProgress size={ isSmallScreen ? 24 : 32 } /> */}
             <CircularProgress size={32} />
           </Box>
         ) : displayedConversations.length === 0 ? (
           <Box
-            sx={{ textAlign: "center", py: 8, px: 2, color: "text.secondary" }}
+            sx={{ 
+              textAlign: "center", 
+              py: { xs: 4, sm: 8 }, 
+              px: 2, 
+              color: "text.secondary" 
+            }}
           >
-            <AddComment sx={{ fontSize: 48, opacity: 0.5, mb: 2 }} />
-            <Typography variant="body2">
+            <AddComment sx={{ 
+              fontSize: { xs: 32, sm: 48 }, 
+              opacity: 0.5, 
+              mb: { xs: 1, sm: 2 } 
+            }} />
+            <Typography 
+              variant={ isSmallScreen ? "body2" : "body1" }
+            >
               {searchQuery
                 ? "Không tìm thấy cuộc hội thoại"
                 : "Chưa có cuộc hội thoại nào"}
@@ -267,7 +291,10 @@ export default function ConversationListMui({
                       <Avatar
                         src={otherUser.avatarUrl}
                         alt={otherUser.displayName}
-                        sx={{ width: 44, height: 44 }}
+                        sx={{ 
+                          width: { xs: 40, sm: 44 }, 
+                          height: { xs: 40, sm: 44 } 
+                        }}
                       >
                         {(otherUser.displayName || otherUser.username)
                           .charAt(0)
@@ -279,8 +306,8 @@ export default function ConversationListMui({
                             position: "absolute",
                             bottom: -2,
                             right: -2,
-                            width: 14,
-                            height: 14,
+                            width: { xs: 12, sm: 14 },
+                            height: { xs: 12, sm: 14 },
                             borderRadius: "50%",
                             border: 2,
                             borderColor: "background.paper",
@@ -386,3 +413,5 @@ export default function ConversationListMui({
     </Box>
   );
 }
+
+export default memo(ConversationListMui);

@@ -19,6 +19,7 @@ import type {
     RemoveFriendErrorData,
     SocketEventCallback
 } from '@/types/socket';
+import { toast } from 'sonner';
 
 class SocketService {
     private socket: Socket | null = null;
@@ -64,13 +65,11 @@ class SocketService {
             this.setupEventListeners();
 
             this.socket.on('connect', () => {
-                console.log('🔌 Đã kết nối tới server:', this.socket?.id);
                 this.isConnecting = false;
                 resolve(this.socket!);
             });
 
             this.socket.on('connect_error', (error) => {
-                console.error('❌ Lỗi kết nối:', error);
                 this.isConnecting = false;
                 reject(error);
             });
@@ -105,15 +104,15 @@ class SocketService {
         if (!this.socket) return;
 
         this.socket.on('disconnect', (reason) => {
-            console.log('🔌 Đã ngắt kết nối khỏi server:', reason);
+            toast.error('⚠️ Đã ngắt kết nối khỏi server: ' + reason);
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
-            console.log('🔄 Đã kết nối lại server, lần thử:', attemptNumber);
+            toast.success('✅ Đã kết nối lại server sau ' + attemptNumber + ' lần thử');
         });
 
         this.socket.on('reconnect_error', (error) => {
-            console.error('❌ Lỗi kết nối lại:', error);
+            toast.error('❌ Lỗi kết nối lại: ' + error);
         });
     }
 
@@ -121,7 +120,6 @@ class SocketService {
     registerUserOnline(userId: string): void {
         if (this.socket?.connected) {
             this.socket.emit('user:online', userId);
-            console.log('👤 Đã đăng ký người dùng online:', userId);
         }
     }
 
@@ -129,28 +127,24 @@ class SocketService {
     sendFriendRequest(data: FriendRequestData): void {
         if (this.socket?.connected) {
             this.socket.emit('SEND_FRIEND_REQUEST', data);
-            console.log('📤 Đang gửi lời mời kết bạn:', data);
         }
     }
 
     respondToFriendRequest(data: RespondFriendRequestData): void {
         if (this.socket?.connected) {
             this.socket.emit('RESPOND_FRIEND_REQUEST', data);
-            console.log('📤 Đang phản hồi lời mời kết bạn:', data);
         }
     }
 
     cancelFriendRequest(requestId: string): void {
         if (this.socket?.connected) {
             this.socket.emit('CANCEL_FRIEND_REQUEST', { requestId });
-            console.log('📤 Đang hủy lời mời kết bạn:', requestId);
         }
     }
 
     removeFriend(data: RemoveFriendData): void {
         if (this.socket?.connected) {
             this.socket.emit('REMOVE_FRIEND', data);
-            console.log('📤 Đang xóa bạn bè:', data);
         }
     }
 

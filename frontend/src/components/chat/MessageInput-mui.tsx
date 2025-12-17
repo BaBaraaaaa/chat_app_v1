@@ -1,5 +1,14 @@
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from 'react';
-import { Box, TextField, IconButton, InputAdornment, Alert, Button } from '@mui/material';
+import { 
+  Box, 
+  TextField, 
+  IconButton, 
+  InputAdornment, 
+  Alert, 
+  Button,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
 import { Send, EmojiEmotions, AttachFile, Close } from '@mui/icons-material';
 import { useMessageStore } from '@/stores/useMessageStore';
 import { useConversationStore } from '@/stores/useConversationStore';
@@ -23,6 +32,9 @@ export default function MessageInputMui({
   const { startTyping, stopTyping } = useMessageStore();
   const { currentConversation } = useConversationStore();
   const { user } = useAuthStore();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [localValue, setLocalValue] = useState(initialValue);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,7 +103,7 @@ export default function MessageInputMui({
       onSendMessage(localValue.trim());
       setLocalValue('');
     } else {
-      console.log("❌ Send blocked:", { hasContent: !!localValue.trim(), disabled });
+      return ;
     }
   }, [localValue, disabled, onSendMessage, currentConversation, user, stopTyping]);
 
@@ -146,34 +158,50 @@ export default function MessageInputMui({
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
           disabled={disabled}
+          size={isMobile ? 'small' : 'medium'}
           sx={{
-            
             '& .MuiInputBase-root': {
               alignItems: 'center',
+              fontSize: { xs: '0.875rem', sm: '1rem' },
             },
             '& .MuiInputBase-input': {
               maxHeight: '150px',
               overflowY: 'auto !important',
+              padding: { xs: '8px', sm: '12px' },
             }
           }}
           
           InputProps={{
             startAdornment: (
-              <InputAdornment position="start" sx={{ alignSelf: 'flex-end', mb: 1 }}>
-                <IconButton size="small" disabled={disabled}>
+              <InputAdornment 
+                position="start" 
+                sx={{ 
+                  alignSelf: 'flex-end', 
+                  mb: { xs: 0.5, sm: 1 },
+                  display: { xs: 'none', sm: 'flex' } // Hide on mobile to save space
+                }}
+              >
+                <IconButton size={isMobile ? "small" : "medium"} disabled={disabled}>
                   <EmojiEmotions />
                 </IconButton>
-                <IconButton size="small" disabled={disabled}>
+                <IconButton size={isMobile ? "small" : "medium"} disabled={disabled}>
                   <AttachFile />
                 </IconButton>
               </InputAdornment>
             ),
             endAdornment: (
-              <InputAdornment position="end" sx={{ alignSelf: 'flex-end', mb: 1 }}>
+              <InputAdornment 
+                position="end" 
+                sx={{ 
+                  alignSelf: 'flex-end', 
+                  mb: { xs: 0.5, sm: 1 }
+                }}
+              >
                 <IconButton 
                   color="primary" 
                   onClick={handleSend}
                   disabled={!localValue.trim() || disabled}
+                  size={isMobile ? "small" : "medium"}
                 >
                   <Send />
                 </IconButton>

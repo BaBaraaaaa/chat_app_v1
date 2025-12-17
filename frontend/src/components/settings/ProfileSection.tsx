@@ -1,4 +1,5 @@
 import type { User, UpdateProfilePayload } from '@/type/user'
+import { memo } from 'react'
 import { Person, CameraAlt, Edit, Close, Save, Delete } from '@mui/icons-material'
 import { 
   Card, 
@@ -88,8 +89,8 @@ const ProfileSection = ({user}: ProfileProps) => {
       toast.success('Cập nhật thông tin thành công!');
       setIsEditing(false);
     } catch (error) {
-      console.log('Cập nhật thất bại', error);
       toast.error('Cập nhật thông tin thất bại! Vui lòng thử lại.');
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -173,7 +174,6 @@ const ProfileSection = ({user}: ProfileProps) => {
       const response = await userApiService.uploadAvatar(croppedFile);
       if (!response.data.user.avatarUrl)
       {
-        console.log(response.data);
         toast.error('Không nhận được URL avatar từ server');
         return;
       }
@@ -438,4 +438,4 @@ const ProfileSection = ({user}: ProfileProps) => {
   )
 }
 
-export default ProfileSection
+export default memo(ProfileSection)

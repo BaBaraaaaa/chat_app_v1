@@ -29,7 +29,6 @@ export const socketAuthMiddleware = async (socket: Socket, next: (err?: Error) =
     // ✅ Attach userId to socket.data NGAY KHI CONNECT
     socket.data.userId = decoded.userId;
 
-    console.log(`✅ Socket ${socket.id} authenticated for user ${decoded.userId}`);
     next();
   } catch (error) {
     console.error(`❌ Socket authentication error:`, error);
