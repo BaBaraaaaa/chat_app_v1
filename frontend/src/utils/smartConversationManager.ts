@@ -26,7 +26,6 @@ export class SmartConversationManager {
    * Quyết định có nên join conversation hay không
    */
   shouldJoinConversation(
-    conversationId: string,
     options: {
       hasUnread?: boolean;
       isCurrentlyActive?: boolean;
