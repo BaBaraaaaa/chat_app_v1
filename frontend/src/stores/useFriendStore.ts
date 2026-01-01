@@ -1,6 +1,6 @@
 import { friendService } from "@/services/friendApiService";
 import { socketService } from "@/socket/socketService";
-import type { FriendState } from "@/type/store";
+import type { FriendState } from "@/types/store";
 import { toast } from "sonner";
 import { create } from "zustand";
 import { useConversationStore } from "./useConversationStore";

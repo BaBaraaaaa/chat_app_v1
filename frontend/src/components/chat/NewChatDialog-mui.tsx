@@ -19,7 +19,7 @@ import { Search, ChatBubbleOutline } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useFriendStore } from '@/stores/useFriendStore';
 import { useConversationStore } from '@/stores/useConversationStore';
-import type { User } from '@/type/user';
+import type { User } from '@/types/user';
 
 interface NewChatDialogProps {
   open: boolean;

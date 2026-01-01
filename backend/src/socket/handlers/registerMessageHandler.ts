@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { MessageController } from "../controllers/messageController";
-import { ConversationController } from "../controllers/conversationController";
-import { MessageType } from "../models/Message";
+import { MessageController } from "../../controllers/messageController";
+import { ConversationController } from "../../controllers/conversationController";
+import { MessageType } from "../../models/Message";
 import { Types } from "mongoose";
-import { FriendshipValidator } from "../utils/friendshipValidator";
+import { FriendshipValidator } from "../../utils/friendshipValidator";
 
 interface OnlineUser {
   userId: string;

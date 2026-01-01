@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { FriendService } from "../services/friendService";
+import { FriendService } from "../../services/friendService";
 
 interface OnlineUser {
   userId: string;

@@ -8,8 +8,10 @@ const Logout = () => {
   const navigate = useNavigate();
   const handleLogout = async () => {
     try {
-      await signOut();
-      navigate("/login", { replace: true });
+      await signOut().finally(()=>{
+        navigate("/login", { replace: true });
+      });
+      
     } catch (error) {
       console.log(error);
     }

@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
-import { registerFriendRequestHandler } from "./registerFriendRequestHandler";
-import { registerMessageHandler } from "./registerMessageHandler";
-import { registerConversationHandler } from "./registerConversationHandler";
+import { registerFriendRequestHandler } from "./handlers/registerFriendRequestHandler";
+import { registerMessageHandler } from "./handlers/registerMessageHandler";
+import { registerConversationHandler } from "./handlers/registerConversationHandler";
 
 interface OnlineUser {
   userId: string;

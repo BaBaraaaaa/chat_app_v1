@@ -4,7 +4,7 @@
  */
 
 import api from "@/lib/axios";
-import type { User, UpdateProfilePayload, UpdateProfileResponse, updateAvatarPayload,  } from "@/type/user";
+import type { User, UpdateProfilePayload, UpdateProfileResponse, updateAvatarPayload,  } from "@/types/user";
 
 interface UserResponse {
   message: string;

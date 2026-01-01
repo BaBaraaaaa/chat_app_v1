@@ -1,4 +1,4 @@
-import type { User, UpdateProfilePayload } from '@/type/user'
+import type { User, UpdateProfilePayload } from '@/types/user'
 import { memo } from 'react'
 import { Person, CameraAlt, Edit, Close, Save, Delete } from '@mui/icons-material'
 import { 

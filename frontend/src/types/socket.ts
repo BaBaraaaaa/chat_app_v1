@@ -1,4 +1,4 @@
-import type{ Friend } from '../type/store';
+import type{ Friend } from './store';
 
 // ==================== SOCKET CORE TYPES ====================
 

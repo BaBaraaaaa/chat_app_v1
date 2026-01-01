@@ -1,5 +1,7 @@
-import { useAuthStore } from "@/stores/useAuthStore";
+// src/services/api.ts
 import axios from "axios";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { toast } from "sonner"; // Thêm import này
 
 const api = axios.create({
   baseURL:
@@ -8,69 +10,73 @@ const api = axios.create({
       : `${import.meta.env.VITE_API_URL}/api`,
   withCredentials: true,
 });
-//interceptor hoạt động giống như middleware, nó can thiệp vào request trước khi gửi đi và response trước khi nhận về
-//gắn access token vào req header
+
+// Request interceptor: gắn access token
 api.interceptors.request.use(
   (config) => {
     const { accessToken } = useAuthStore.getState();
     if (accessToken && config.headers) {
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-//tự động gọi refresh token khi access token hết hạn
+// Response interceptor: auto refresh khi token hết hạn
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    const { accessToken } = useAuthStore.getState();
-    
-    //danh sách các endpoint không cần refresh token
+
     const excludedEndpoints = [
       "/auth/login",
       "/auth/register",
       "/auth/refresh-token",
       "/auth/logout",
     ];
-    
-    // Chỉ thực hiện refresh token nếu:
-    // 1. Có access token (người dùng đã đăng nhập)
-    // 2. Lỗi 403
-    // 3. Không phải endpoint loại trừ
+
+    const isExcluded = excludedEndpoints.some((endpoint) =>
+      originalRequest.url?.includes(endpoint)
+    );
+
+    // Chỉ xử lý lỗi 401 hoặc 403, chưa retry, không phải endpoint loại trừ
     if (
-      accessToken &&
-      error.response?.status === 403 &&
-      !excludedEndpoints.some((endpoint) =>
-        originalRequest.url?.includes(endpoint)
-      )
+      (error.response?.status === 401 || error.response?.status === 403) &&
+      !originalRequest._retry &&
+      !isExcluded
     ) {
-      originalRequest._retryCount = originalRequest._retryCount || 0;
-      if (originalRequest._retryCount < 4) {
-        originalRequest._retryCount += 1;
-        try {
-          const res = await api.post(
-            "/auth/refresh-token",
-            {},
-            { withCredentials: true }
-          );
-          const newAccessToken = res.data.accessToken;
-          useAuthStore.getState().setAccessToken(newAccessToken);
-          originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-          return api({ ...originalRequest }, { withCredentials: true });
-        } catch (error) {
-          console.log("Lỗi khi refresh Token", error);
-          //Nếu hết hạn phiên -> xóa token và user khỏi store
-          useAuthStore.getState().clearState();
+      originalRequest._retry = true;
+
+      try {
+        const res = await api.post("/auth/refresh-token");
+        const newAccessToken = res.data.accessToken;
+
+        // Cập nhật token mới
+        useAuthStore.getState().setAccessToken(newAccessToken);
+
+        // Retry request gốc với token mới
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh thất bại → kiểm tra xem trước đó có đang đăng nhập không
+        const { user } = useAuthStore.getState();
+
+        if (user) {
+          // Chỉ toast khi người dùng đang hoạt động thật sự (đã có user trước khi lỗi)
+          toast.error("Phiên đã hết hạn! Vui lòng đăng nhập lại.");
         }
-      } else {
-        //Nếu hết hạn phiên -> xóa token và user khỏi store
+
+        // Luôn clear state (logout client-side)
         useAuthStore.getState().clearState();
+
+        return Promise.reject(refreshError);
       }
     }
+
+    // Các lỗi khác (400, 500, network error,...) → để component handle
     return Promise.reject(error);
   }
 );
+
 export default api;

@@ -6,7 +6,6 @@ import path from 'path';
 import { connectDb } from './libs/db';
 import authRoute from './routes/authRoute';
 import cookieParser from 'cookie-parser';
-import { authMiddleware } from './middleware/authMiddleware';
 import userRoute from './routes/userRoute';
 import cors from 'cors';
 import friendRequestRoute from './routes/friendsRoute';

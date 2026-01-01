@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { ConversationController } from "../controllers/conversationController";
+import { ConversationController } from "../../controllers/conversationController";
 
 interface OnlineUser {
   userId: string;
