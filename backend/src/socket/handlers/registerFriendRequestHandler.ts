@@ -163,7 +163,6 @@ export const registerFriendRequestHandler = (
       try {
         const { requestId } = data;
 
-        // ✅ Lấy userId trực tiếp từ socket.data
         const userId = socket.data.userId;
         if (!userId) {
           socket.emit("CANCEL_FRIEND_REQUEST_ERROR", {

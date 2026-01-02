@@ -3,7 +3,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthInit } from "@/hooks/useAuthInit";
 
-const PublicRoute = () => {
+const PublicRouter = () => {
   const { loading } = useAuthStore();
   const { isInitialized, isAuthenticated } = useAuthInit();
 
@@ -29,4 +29,4 @@ const PublicRoute = () => {
   return <Outlet />;
 };
 
-export default PublicRoute;
+export default PublicRouter;

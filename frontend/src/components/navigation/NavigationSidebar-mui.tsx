@@ -22,7 +22,6 @@ export default function NavigationSidebarMui({
   notificationCount = 0,
 }: NavigationSidebarProps) {
   const { user, signOut } = useAuthStore();
-
   const menuItems = [
     { id: 'chat' as const, icon: <Chat />, tooltip: 'Tin nhắn' },
     { id: 'friends' as const, icon: <People />, tooltip: 'Bạn bè' },

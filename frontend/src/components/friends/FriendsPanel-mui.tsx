@@ -30,7 +30,6 @@ export default function FriendsPanelMui() {
     return () => {
       removeSocketListeners();
     };
-    // Chỉ chạy khi component mount, không phụ thuộc vào isConnected
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ⚠️ Empty dependency array - chỉ chạy 1 lần
 

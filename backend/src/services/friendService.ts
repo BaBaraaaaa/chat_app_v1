@@ -235,7 +235,6 @@ export class FriendService {
         };
       }
 
-      // ✅ Xóa hoàn toàn khỏi database thay vì chỉ thay đổi status
       await FriendRequest.findByIdAndDelete(requestId);
 
       return {

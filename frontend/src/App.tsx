@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import ProtectedRouter from "./components/auth/ProtectedRouter";
-import PublicRoute from "./components/auth/PublicRoute";
+import PublicRouter from "./components/auth/PublicRouter";
 import { Backdrop, Box, CircularProgress } from "@mui/material";
 import { useAuthStore } from "./stores/useAuthStore";
 
@@ -69,7 +69,7 @@ function App() {
             <Route path="/" element={<Navigate to="/chat" replace />} />
 
             {/* Public routes */}
-            <Route element={<PublicRoute />}>
+            <Route element={<PublicRouter />}>
               <Route path="/login" element={<SignInPage />} />
               <Route path="/register" element={<SignUpPage />} />
               <Route path="/theme-test" element={<ThemeTestPage />} />

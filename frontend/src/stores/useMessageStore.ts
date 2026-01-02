@@ -311,11 +311,11 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         });
 
         // Listen for edit success
-        messageService.onEditMessageSuccess((data) => {
-            if (data.success) {
-                toast.success("Đã chỉnh sửa tin nhắn");
-            }
-        });
+        // messageService.onEditMessageSuccess((data) => {
+        //     if (data.success) {
+        //         toast.success("Đã chỉnh sửa tin nhắn");
+        //     }
+        // });
 
         // Listen for typing indicator
         messageService.onUserTyping((data) => {

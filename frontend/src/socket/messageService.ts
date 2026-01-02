@@ -20,7 +20,6 @@ import type {
     DeleteMessageSuccessResponse,
     MessageDeletedResponse,
     EditMessagePayload,
-    EditMessageSuccessResponse,
     MessageEditedResponse,
     TypingPayload,
     UserTypingResponse,
@@ -219,9 +218,9 @@ class MessageService {
     /**
      * Listen for edit message success
      */
-    onEditMessageSuccess(callback: SocketEventCallback<EditMessageSuccessResponse>): void {
-        socketService.on('EDIT_MESSAGE_SUCCESS', callback as (...args: unknown[]) => void);
-    }
+    // onEditMessageSuccess(callback: SocketEventCallback<EditMessageSuccessResponse>): void {
+    //     socketService.on('EDIT_MESSAGE_SUCCESS', callback as (...args: unknown[]) => void);
+    // }
 
     /**
      * Listen for message edited (real-time)
@@ -314,7 +313,6 @@ class MessageService {
         socketService.removeListener('MARK_ALL_READ_SUCCESS');
         socketService.removeListener('DELETE_MESSAGE_SUCCESS');
         socketService.removeListener('MESSAGE_DELETED');
-        socketService.removeListener('EDIT_MESSAGE_SUCCESS');
         socketService.removeListener('MESSAGE_EDITED');
         socketService.removeListener('USER_TYPING');
         socketService.removeListener('UNREAD_COUNT');

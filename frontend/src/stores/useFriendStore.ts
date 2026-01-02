@@ -400,7 +400,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     });
 
     // Lắng nghe khi chính mình xử lý friend request (accept/decline)
-    // ✅ Event này dành cho NGƯỜI XỬ LÝ (responder)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socketService.onFriendRequestProcessed((data: any) => {
       // ✅ Nếu accept, active lại conversation (dùng senderId từ friendRequest)
@@ -440,7 +439,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       // Refresh danh sách requests
       get().getFriendRequests();
 
-      toast.info("Một lời mời kết bạn đã bị hủy");
     });
 
     // Lắng nghe friend request được gửi thành công
