@@ -1,1 +1,0 @@
-{"version":3,"file":"registerMessageHandler.d.ts","sourceRoot":"","sources":["../../src/socket/registerMessageHandler.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,EAAE,MAAM,WAAW,CAAC;AAO3C,UAAU,UAAU;IAClB,MAAM,EAAE,MAAM,CAAC;IACf,QAAQ,EAAE,MAAM,CAAC;CAClB;AAED;;GAEG;AACH,eAAO,MAAM,sBAAsB,GACjC,IAAI,MAAM,EACV,QAAQ,MAAM,EACd,aAAa,UAAU,EAAE,SA8Z1B,CAAC"}
