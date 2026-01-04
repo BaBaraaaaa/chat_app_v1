@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocketStore } from '@/stores/useSocketStore';
 import { useFriendStore } from '@/stores/useFriendStore';
@@ -87,9 +87,21 @@ export const useSocket = () => {
         listenersSetupRef.current = false;
       }
     };
-  }, [user?._id, accessToken, connect, disconnect, registerUser, setupSocketListeners, removeSocketListeners,
-    setupConversationListeners, removeConversationListeners, setupMessageListeners,
-    removeMessageListeners, setupInvitationListeners, removeInvitationListeners]);
+  }, [
+    user?._id,
+    accessToken,
+    connect,
+    disconnect,
+    registerUser,
+    setupSocketListeners,
+    removeSocketListeners,
+    setupConversationListeners,
+    removeConversationListeners,
+    setupMessageListeners,
+    removeMessageListeners,
+    setupInvitationListeners,
+    removeInvitationListeners
+  ]);
 
   // Reconnection logic khi connection bị mất
   useEffect(() => {
@@ -120,7 +132,24 @@ export const useSocket = () => {
     }
   }, [isConnected, user, accessToken, isConnecting, connect, registerUser]);
 
-  return {
+  // Manual connection control
+  const manualConnect = useCallback(() =>
+    user && accessToken ? connect(accessToken) : Promise.resolve(false),
+    [user, accessToken, connect]);
+
+  // Connection status helpers
+  const isUserOnline = useCallback((userId: string) =>
+    onlineUsers.includes(userId),
+    [onlineUsers]);
+
+  const getConnectionStatus = useCallback(() => {
+    if (isConnecting) return 'connecting';
+    if (isConnected) return 'connected';
+    if (connectionError) return 'error';
+    return 'disconnected';
+  }, [isConnecting, isConnected, connectionError]);
+
+  return useMemo(() => ({
     // Connection state
     isConnected,
     isConnecting,
@@ -130,21 +159,24 @@ export const useSocket = () => {
     onlineUsers,
     onlineCount,
 
-    // Notifications
-
-    // Manual connection control (nếu cần)
-    connect: () => user && accessToken ? connect(accessToken) : Promise.resolve(false),
+    // Manual connection control
+    connect: manualConnect,
     disconnect,
 
     // Connection status helpers
-    isUserOnline: (userId: string) => onlineUsers.includes(userId),
-    getConnectionStatus: () => {
-      if (isConnecting) return 'connecting';
-      if (isConnected) return 'connected';
-      if (connectionError) return 'error';
-      return 'disconnected';
-    }
-  };
+    isUserOnline,
+    getConnectionStatus
+  }), [
+    isConnected,
+    isConnecting,
+    connectionError,
+    onlineUsers,
+    onlineCount,
+    manualConnect,
+    disconnect,
+    isUserOnline,
+    getConnectionStatus
+  ]);
 };
 
 export default useSocket;

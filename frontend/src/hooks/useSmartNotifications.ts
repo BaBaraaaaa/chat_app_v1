@@ -3,20 +3,20 @@
  * Xử lý notifications tin nhắn mới mà không cần join tất cả conversations
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useConversationStore } from '@/stores/useConversationStore';
 import { useMessageStore } from '@/stores/useMessageStore';
 import { smartConversationManager } from '@/utils/smartConversationManager';
 import { toast } from 'sonner';
-import type { 
-  MessageNotificationData, 
-  TypingNotificationData, 
-  MessageReadNotificationData 
+import type {
+  MessageNotificationData,
+  TypingNotificationData,
+  MessageReadNotificationData
 } from '@/types/message';
 import type { SocketInstance } from '@/types/socket';
 
 export const useSmartNotifications = () => {
-  const { _updateConversation, conversations } = useConversationStore();
+  const { _updateConversation } = useConversationStore();
   const { joinConversation, _addMessage } = useMessageStore();
 
   /**
@@ -59,7 +59,7 @@ export const useSmartNotifications = () => {
 
       if (joined) {
         joinConversation(conversationId);
-        
+
         // Add message to store
         _addMessage(conversationId, message);
       }
@@ -68,7 +68,9 @@ export const useSmartNotifications = () => {
     }
 
     // 3. ✅ Show toast notification nếu không phải conversation đang active
-    const currentConv = conversations?.find(c => c._id === conversationId);
+    // Use getState to avoid dependency on 'conversations'
+    const latestConversations = useConversationStore.getState().conversations;
+    const currentConv = latestConversations?.find(c => c._id === conversationId);
     if (!currentConv?.isActive) {
       const senderName = message.senderId.displayName || message.senderId.username;
       toast.info(`💬 ${senderName}: ${message.content}`, {
@@ -79,12 +81,11 @@ export const useSmartNotifications = () => {
             // Force join và switch to conversation
             smartConversationManager.joinConversation(conversationId, 200);
             joinConversation(conversationId);
-            // TODO: Switch to conversation in UI
           }
         }
       });
     }
-  }, [_updateConversation, _addMessage, joinConversation, conversations]);
+  }, [_updateConversation, _addMessage, joinConversation]);
 
   /**
    * Xử lý typing notification
@@ -114,11 +115,11 @@ export const useSmartNotifications = () => {
     }
   }, []);
 
-  return {
+  return useMemo(() => ({
     handleNewMessageNotification,
     handleTypingNotification,
     handleMessageReadNotification,
-  };
+  }), [handleNewMessageNotification, handleTypingNotification, handleMessageReadNotification]);
 };
 
 /**
@@ -131,19 +132,18 @@ export const useSmartNotificationSetup = () => {
     handleMessageReadNotification,
   } = useSmartNotifications();
 
-  const setupNotificationListeners = useCallback((socket: SocketInstance) => {
-    // Listen for global notifications (không cần join room)
-    socket.on<MessageNotificationData>('NEW_MESSAGE_NOTIFICATION', handleNewMessageNotification);
-    socket.on<TypingNotificationData>('USER_TYPING', handleTypingNotification);
-    socket.on<MessageReadNotificationData>('MESSAGE_READ', handleMessageReadNotification);
+  return useMemo(() => ({
+    setupNotificationListeners: (socket: SocketInstance) => {
+      // Listen for global notifications (không cần join room)
+      socket.on('NEW_MESSAGE_NOTIFICATION', handleNewMessageNotification);
+      socket.on('USER_TYPING', handleTypingNotification);
+      socket.on('MESSAGE_READ', handleMessageReadNotification);
 
-
-    return () => {
-      socket.off<MessageNotificationData>('NEW_MESSAGE_NOTIFICATION', handleNewMessageNotification);
-      socket.off<TypingNotificationData>('USER_TYPING', handleTypingNotification);
-      socket.off<MessageReadNotificationData>('MESSAGE_READ', handleMessageReadNotification);
-    };
-  }, [handleNewMessageNotification, handleTypingNotification, handleMessageReadNotification]);
-
-  return { setupNotificationListeners };
+      return () => {
+        socket.off('NEW_MESSAGE_NOTIFICATION', handleNewMessageNotification);
+        socket.off('USER_TYPING', handleTypingNotification);
+        socket.off('MESSAGE_READ', handleMessageReadNotification);
+      };
+    }
+  }), [handleNewMessageNotification, handleTypingNotification, handleMessageReadNotification]);
 };

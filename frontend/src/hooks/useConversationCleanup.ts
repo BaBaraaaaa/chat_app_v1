@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 
 /**
  * Hook để quản lý việc leave conversation rooms khi không cần thiết
@@ -70,10 +70,16 @@ export const useConversationCleanup = (
     };
   }, [currentConversationId, joinedConversations, maxActiveConversations]);
 
-  return {
-    markConversationActive: (convId: string) => {
-      lastActiveRef.current.set(convId, Date.now());
-    },
-    getActiveConversations: () => Array.from(lastActiveRef.current.keys()),
-  };
+  const markConversationActive = useCallback((convId: string) => {
+    lastActiveRef.current.set(convId, Date.now());
+  }, []);
+
+  const getActiveConversations = useCallback(() =>
+    Array.from(lastActiveRef.current.keys())
+    , []);
+
+  return useMemo(() => ({
+    markConversationActive,
+    getActiveConversations,
+  }), [markConversationActive, getActiveConversations]);
 };
