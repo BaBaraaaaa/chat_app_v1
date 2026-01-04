@@ -75,7 +75,7 @@ export const messageApiService = {
   },
 
   /**
-   * Đánh dấu tin nhắn đã đọc (REST API fallback)
+   * Đánh dấu tin nhắn đã đọc [REST Fallback - Socket preferred]
    * Backend endpoint: POST /api/messages/:messageId/read
    */
   markMessageAsRead: async (messageId: string): Promise<MessageResponse> => {
@@ -88,7 +88,7 @@ export const messageApiService = {
   },
 
   /**
-   * Đánh dấu tất cả tin nhắn đã đọc (REST API fallback)
+   * Đánh dấu tất cả tin nhắn đã đọc [REST Fallback - Socket preferred]
    * Backend endpoint: POST /api/messages/conversations/:conversationId/mark-all-read
    */
   markAllMessagesAsRead: async (conversationId: string): Promise<SimpleResponse> => {
@@ -101,7 +101,7 @@ export const messageApiService = {
   },
 
   /**
-   * Xóa tin nhắn (REST API fallback)
+   * Xóa tin nhắn [REST Fallback - Socket preferred]
    * Backend endpoint: DELETE /api/messages/:messageId
    */
   deleteMessage: async (messageId: string): Promise<MessageResponse> => {
@@ -113,7 +113,7 @@ export const messageApiService = {
   },
 
   /**
-   * Chỉnh sửa tin nhắn (REST API fallback)
+   * Chỉnh sửa tin nhắn [REST Fallback - Socket preferred]
    * Backend endpoint: PUT /api/messages/:messageId
    */
   editMessage: async (messageId: string, newContent: string): Promise<MessageResponse> => {
@@ -136,5 +136,14 @@ export const messageApiService = {
 
     const res = await api.get(url, { withCredentials: true });
     return res.data;
-  }
+  },
+
+  /**
+   * Xóa toàn bộ lịch sử trò chuyện trong conversation
+   * Backend endpoint: DELETE /api/messages/conversations/:conversationId
+   */
+  clearChat: async (conversationId: string): Promise<SimpleResponse> => {
+    const res = await api.delete(`/messages/conversations/${conversationId}`, { withCredentials: true });
+    return res.data;
+  },
 };

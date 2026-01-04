@@ -29,7 +29,8 @@ export interface IMessage extends Document {
   }[];
   replyTo?: Types.ObjectId; // ID của message được reply
   isEdited: boolean;
-  isDeleted: boolean;
+  isDeleted: boolean; // Xóa cho tất cả mọi người
+  deletedBy: Types.ObjectId[]; // Danh sách user ẩn tin nhắn này cho riêng họ
   deletedAt?: Date;
   readAt?: Date;
   deliveredAt?: Date;
@@ -95,6 +96,12 @@ const MessageSchema = new Schema<IMessage>(
       type: Boolean,
       default: false
     },
+    deletedBy: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User"
+      }
+    ],
     deletedAt: {
       type: Date
     },
@@ -124,7 +131,8 @@ MessageSchema.statics.getUnreadMessages = async function (
   const query: any = {
     receiverId: userId,
     status: { $ne: MessageStatus.READ },
-    isDeleted: false
+    isDeleted: false,
+    deletedBy: { $ne: userId }
   };
 
   if (conversationId) {
@@ -145,7 +153,8 @@ MessageSchema.statics.countUnreadMessages = async function (
   const query: any = {
     receiverId: userId,
     status: { $ne: MessageStatus.READ },
-    isDeleted: false
+    isDeleted: false,
+    deletedBy: { $ne: userId }
   };
 
   if (conversationId) {

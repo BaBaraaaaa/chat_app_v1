@@ -2,6 +2,7 @@ import GroupInvitation, { IGroupInvitation, InvitationStatus } from "../models/G
 import Conversation, { ConversationType } from "../models/Conversation";
 import User from "../models/User";
 import { Types } from "mongoose";
+import { getIO } from "../libs/socket";
 
 export interface GroupInvitationResponse {
     success: boolean;
@@ -207,7 +208,7 @@ export class GroupInvitationService {
                 if (joinedUser) {
                     const systemContent = `${joinedUser.displayName || joinedUser.username} đã tham gia nhóm qua lời mời`;
 
-                    await (require("../models/Message").default).create({
+                    const systemMessage = await (require("../models/Message").default).create({
                         conversationId: invitation.conversationId,
                         senderId: new Types.ObjectId("000000000000000000000000"),
                         content: systemContent,
@@ -218,12 +219,66 @@ export class GroupInvitationService {
                     // Cập nhật lastMessage
                     await (require("../models/Conversation").default).findByIdAndUpdate(invitation.conversationId, {
                         lastMessage: {
+                            messageId: systemMessage._id,
                             content: systemContent,
                             senderId: new Types.ObjectId("000000000000000000000000"),
                             sentAt: new Date(),
                             type: "system"
                         }
                     });
+
+                    // 🔔 Emit notifications via Socket.IO
+                    const { getIO } = require("../libs/socket");
+                    const io = getIO();
+                    if (io) {
+                        const conversationIdStr = invitation.conversationId.toString();
+
+                        // 1. Broadcast system message to everyone in the room
+                        io.to(`conversation_${conversationIdStr}`).emit("NEW_MESSAGE", {
+                            conversationId: conversationIdStr,
+                            message: await systemMessage.populate('senderId', 'username displayName avatarUrl')
+                        });
+
+                        // 2. Notify room about new member
+                        // Fetch fresh updated conversation to ensure participants are populated correctly
+                        const updatedConv = await (require("../models/Conversation").default).findById(invitation.conversationId)
+                            .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
+                        io.to(`conversation_${conversationIdStr}`).emit("GROUP_MEMBER_JOINED", {
+                            conversationId: conversationIdStr,
+                            newMember: joinedUser,
+                            conversation: updatedConv,
+                            message: systemContent
+                        });
+
+                        // 3. Notify all participants via MESSAGE_NOTIFICATION (for sidebar update)
+                        if (updatedConv && updatedConv.participants) {
+                            const populatedMessage = await systemMessage.populate('senderId', 'username displayName avatarUrl');
+                            updatedConv.participants.forEach((p: any) => {
+                                const pId = p._id.toString();
+                                // Send to everyone including the one who joined (to sync their own sidebar)
+                                io.to(`user_${pId}`).emit("NEW_MESSAGE_NOTIFICATION", {
+                                    message: populatedMessage,
+                                    conversation: updatedConv,
+                                    unreadCount: (updatedConv.unreadCount?.get(pId) || 0),
+                                    from: 'system'
+                                });
+
+                                // Update unread count badge
+                                io.to(`user_${pId}`).emit("UNREAD_COUNT_CHANGED", {
+                                    conversationId: conversationIdStr,
+                                    unreadCount: (updatedConv.unreadCount?.get(pId) || 0)
+                                });
+                            });
+                        }
+
+                        // 4. Notify inviter about status change
+                        io.to(`user_${invitation.inviterId.toString()}`).emit("GROUP_INVITATION_STATUS_CHANGED", {
+                            invitationId: invitation._id.toString(),
+                            status: InvitationStatus.ACCEPTED,
+                            inviteeId: userId.toString()
+                        });
+                    }
                 }
             } catch (sysErr) {
                 console.error("Lỗi tạo tin nhắn hệ thống khi chấp nhận lời mời:", sysErr);
@@ -294,6 +349,21 @@ export class GroupInvitationService {
                 .populate('inviterId', 'username displayName avatarUrl')
                 .populate('inviteeId', 'username displayName avatarUrl');
 
+            // 🔔 Emit notifications via Socket.IO
+            try {
+                const io = getIO();
+                if (io && populatedInvitation) {
+                    // Notify inviter about status change
+                    io.to(`user_${populatedInvitation.inviterId._id.toString()}`).emit("GROUP_INVITATION_STATUS_CHANGED", {
+                        invitationId: populatedInvitation._id.toString(),
+                        status: InvitationStatus.DECLINED,
+                        inviteeId: userId.toString()
+                    });
+                }
+            } catch (socketError) {
+                console.error("⚠️ Socket notification error in declineInvitation:", socketError);
+            }
+
             return {
                 success: true,
                 message: "Đã từ chối lời mời",
@@ -346,6 +416,22 @@ export class GroupInvitationService {
                 .populate('conversationId', 'name avatarUrl')
                 .populate('inviterId', 'username displayName avatarUrl')
                 .populate('inviteeId', 'username displayName avatarUrl');
+
+            // 🔔 Emit notifications via Socket.IO
+            try {
+                const { getIO } = require("../libs/socket");
+                const io = getIO();
+                if (io && populatedInvitation) {
+                    // Notify invitee about status change
+                    io.to(`user_${populatedInvitation.inviteeId._id.toString()}`).emit("GROUP_INVITATION_STATUS_CHANGED", {
+                        invitationId: populatedInvitation._id.toString(),
+                        status: InvitationStatus.CANCELLED,
+                        adminId: adminId.toString()
+                    });
+                }
+            } catch (socketError) {
+                console.error("⚠️ Socket notification error in cancelInvitation:", socketError);
+            }
 
             return {
                 success: true,

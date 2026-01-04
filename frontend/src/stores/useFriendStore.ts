@@ -1,10 +1,9 @@
 import { friendService } from "@/services/friendApiService";
 import { socketService } from "@/socket/socketService";
-import type { FriendState } from "@/types/store";
 import { toast } from "sonner";
 import { create } from "zustand";
 import { useConversationStore } from "./useConversationStore";
-
+import type { FriendState } from "@/types/friends";
 interface ApiError {
   response?: {
     data?: {

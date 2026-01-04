@@ -14,10 +14,6 @@ const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
 if (!cloudName || !apiKey || !apiSecret) {
-  console.error('❌ Missing Cloudinary configuration:');
-  console.error('CLOUDINARY_CLOUD_NAME:', cloudName ? '✅ SET' : '❌ MISSING');
-  console.error('CLOUDINARY_API_KEY:', apiKey ? '✅ SET' : '❌ MISSING');
-  console.error('CLOUDINARY_API_SECRET:', apiSecret ? '✅ SET' : '❌ MISSING');
   throw new Error('Missing Cloudinary configuration. Please check your .env file.');
 }
 
@@ -129,7 +125,7 @@ export class CloudinaryService {
   static async deleteImage(publicId: string): Promise<UploadResponse> {
     try {
       const result = await cloudinary.uploader.destroy(publicId);
-      
+
       if (result.result === 'ok') {
         return {
           success: true,
@@ -170,14 +166,11 @@ export class CloudinaryService {
   static validateConfig(): boolean {
     const { cloud_name, api_key, api_secret } = cloudinary.config();
     const isValid = !!(cloud_name && api_key && api_secret);
-    
+
     if (!isValid) {
       console.error('❌ Cloudinary configuration is invalid:');
-      console.error('Cloud name:', cloud_name ? 'SET' : 'MISSING');
-      console.error('API key:', api_key ? 'SET' : 'MISSING');
-      console.error('API secret:', api_secret ? 'SET' : 'MISSING');
     }
-    
+
     return isValid;
   }
 
@@ -192,10 +185,10 @@ export class CloudinaryService {
           message: 'Cloudinary configuration is invalid'
         };
       }
-      
+
       // Test by getting account details
       const result = await cloudinary.api.ping();
-      
+
       return {
         success: true,
         message: 'Cloudinary connection successful'

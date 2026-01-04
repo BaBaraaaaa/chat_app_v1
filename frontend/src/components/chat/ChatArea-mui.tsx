@@ -29,6 +29,7 @@ import type { Contact } from '@/types/chat';
 import type { Message } from '@/types/message';
 import { toast } from 'sonner';
 import { useMessageStore } from '@/stores/useMessageStore';
+import { useConversationStore } from '@/stores/useConversationStore';
 
 interface ChatAreaProps {
   selectedContact: Contact | null;
@@ -63,6 +64,7 @@ export default function ChatAreaMui({
   const [groupSettingsOpen, setGroupSettingsOpen] = useState(false); // State for settings dialog
 
   const { editMessage, deleteMessage } = useMessageStore();
+  const { deleteConversation, setCurrentConversation } = useConversationStore();
   const open = Boolean(anchorEl);
 
   const theme = useTheme();
@@ -136,6 +138,15 @@ export default function ChatAreaMui({
   const handleArchive = () => {
     toast.warning('Chức năng lưu trữ tin nhắn đang được phát triển');
     handleMenuClose();
+  };
+  const handleDeleteConversation = async () => {
+    if (!selectedContact) return;
+    if (window.confirm("Bạn có chắc muốn xóa cuộc hội thoại này khỏi danh sách?")) {
+      await deleteConversation(selectedContact.id);
+      setCurrentConversation(null); // Unselect
+      handleMenuClose();
+      if (onMobileBack) onMobileBack();
+    }
   };
 
   if (!selectedContact) {
@@ -320,6 +331,12 @@ export default function ChatAreaMui({
               <Archive fontSize="small" />
             </ListItemIcon>
             <ListItemText>Lưu trữ</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleDeleteConversation} sx={{ color: 'error.main' }}>
+            <ListItemIcon>
+              <MoreVert fontSize="small" sx={{ color: 'error.main' }} />
+            </ListItemIcon>
+            <ListItemText>Xóa cuộc hội thoại</ListItemText>
           </MenuItem>
         </Menu>
       </Box>

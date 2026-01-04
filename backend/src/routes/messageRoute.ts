@@ -209,4 +209,36 @@ router.put("/:messageId", async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * DELETE /api/messages/conversations/:conversationId
+ * Clear all messages in a conversation
+ */
+router.delete("/conversations/:conversationId", async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.id;
+        const conversationId = req.params.conversationId;
+
+        if (!conversationId) {
+            return res.status(400).json({
+                success: false,
+                message: "ID cuộc trò chuyện không hợp lệ"
+            });
+        }
+
+        const result = await messageController.clearChat(conversationId, userId);
+
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Lỗi hệ thống",
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+
 export default router;

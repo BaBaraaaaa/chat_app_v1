@@ -90,12 +90,14 @@ export class MessageService {
       // Cập nhật lastMessage và unreadCount
       const updateData: any = {
         lastMessage: {
+          messageId: newMessage._id,
           content: content.trim(),
           senderId,
           sentAt: new Date(),
           type
         },
-        $inc: {}
+        $inc: {},
+        $set: { hiddenBy: [] } // Reactivate for all if it was hidden
       };
 
       // Tăng unread count (logic khác nhau cho Group và Direct)
@@ -160,7 +162,8 @@ export class MessageService {
       // Lấy messages
       const messages = await Message.find({
         conversationId,
-        isDeleted: false
+        isDeleted: false,
+        deletedBy: { $ne: userId }
       })
         .populate('senderId', 'username displayName avatarUrl firstName lastName')
         .populate('receiverId', 'username displayName avatarUrl firstName lastName')
@@ -221,7 +224,8 @@ export class MessageService {
       // Xây dựng query với cursor nếu có
       const query: any = {
         conversationId,
-        isDeleted: false
+        isDeleted: false,
+        deletedBy: { $ne: userId }
       }
       if (cursor) {
         query._id = { $lt: new Types.ObjectId(cursor) }; //lấy các message có id nhỏ hơn cursor
@@ -365,6 +369,65 @@ export class MessageService {
   }
 
   /**
+   * Xóa tất cả tin nhắn trong conversation (soft delete)
+   */
+  static async clearConversationMessages(
+    conversationId: Types.ObjectId,
+    userId: Types.ObjectId
+  ): Promise<MessageResponse> {
+    try {
+      // Kiểm tra user có trong conversation không
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation) {
+        return {
+          success: false,
+          message: "Cuộc hội thoại không tồn tại"
+        };
+      }
+
+      const isParticipant = conversation.participants.some(
+        p => p.toString() === userId.toString()
+      );
+      if (!isParticipant) {
+        return {
+          success: false,
+          message: "Bạn không có quyền xóa tin nhắn trong cuộc hội thoại này"
+        };
+      }
+
+      // Thêm user vào danh sách deletedBy của tất cả tin nhắn hiện tại
+      await Message.updateMany(
+        {
+          conversationId,
+          isDeleted: false,
+          deletedBy: { $ne: userId }
+        },
+        { $addToSet: { deletedBy: userId } }
+      );
+
+      // Lưu ý: lastMessage trong Conversation là global. 
+      // Nếu user này xóa lịch sử, chúng ta không nên xóa hẳn lastMessage global
+      // vì sẽ ảnh hưởng đến người kia. 
+      // Tuy nhiên, có thể cập nhật để ẩn cuộc hội thoại cho user này.
+      await Conversation.findByIdAndUpdate(conversationId, {
+        $addToSet: { hiddenBy: userId }
+      });
+
+      return {
+        success: true,
+        message: "Đã xóa toàn bộ lịch sử trò chuyện"
+      };
+    } catch (error) {
+      console.error("Lỗi xóa lịch sử trò chuyện:", error);
+      return {
+        success: false,
+        message: "Lỗi xóa lịch sử trò chuyện",
+        error
+      };
+    }
+  }
+
+  /**
    * Xóa tin nhắn (soft delete)
    */
   static async deleteMessage(
@@ -408,6 +471,7 @@ export class MessageService {
         // Còn tin nhắn → Cập nhật lastMessage thành tin nhắn gần nhất
         await Conversation.findByIdAndUpdate(conversationId, {
           lastMessage: {
+            messageId: latestMessage._id,
             content: latestMessage.content,
             senderId: latestMessage.senderId,
             sentAt: latestMessage.createdAt,
@@ -532,6 +596,7 @@ export class MessageService {
       // Update last message
       await Conversation.findByIdAndUpdate(conversationId, {
         lastMessage: {
+          messageId: newMessage._id,
           content,
           senderId: new Types.ObjectId("000000000000000000000000"),
           sentAt: new Date(),

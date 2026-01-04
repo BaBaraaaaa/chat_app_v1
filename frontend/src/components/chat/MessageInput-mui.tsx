@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from 'react';
-import { 
-  Box, 
-  TextField, 
-  IconButton, 
-  InputAdornment, 
-  Alert, 
+import {
+  Box,
+  TextField,
+  IconButton,
+  InputAdornment,
+  Alert,
   Button,
   useTheme,
   useMediaQuery
@@ -22,9 +22,9 @@ interface MessageInputProps {
   onCancelEdit?: () => void;
 }
 
-export default function MessageInputMui({ 
+export default function MessageInputMui({
   initialValue = '',
-  onSendMessage, 
+  onSendMessage,
   disabled = false,
   editingMessageId,
   onCancelEdit
@@ -56,18 +56,16 @@ export default function MessageInputMui({
       setLocalValue(val);
 
       if (!currentConversation || !user) return;
-      const receiver = currentConversation.participants.find(p => p._id !== user._id);
-      if (!receiver) return;
 
       if (!isTypingRef.current) {
-        startTyping(currentConversation._id, receiver._id);
+        startTyping(currentConversation._id);
         isTypingRef.current = true;
       }
 
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      
+
       typingTimeoutRef.current = setTimeout(() => {
-        stopTyping(currentConversation._id, receiver._id);
+        stopTyping(currentConversation._id);
         isTypingRef.current = false;
       }, 3000);
     },
@@ -81,29 +79,23 @@ export default function MessageInputMui({
         clearTimeout(typingTimeoutRef.current);
       }
       if (isTypingRef.current && currentConversation && user) {
-        const receiver = currentConversation.participants.find(p => p._id !== user._id);
-        if (receiver) {
-          stopTyping(currentConversation._id, receiver._id);
-        }
+        stopTyping(currentConversation._id);
       }
     };
   }, [currentConversation, user, stopTyping]);
 
   const handleSend = useCallback(() => {
     if (localValue.trim() && !disabled) {
-  
+
       // Stop typing khi gửi
       if (isTypingRef.current && currentConversation && user) {
-        const receiver = currentConversation.participants.find(p => p._id !== user._id);
-        if (receiver) {
-          stopTyping(currentConversation._id, receiver._id);
-          isTypingRef.current = false;
-        }
+        stopTyping(currentConversation._id);
+        isTypingRef.current = false;
       }
       onSendMessage(localValue.trim());
       setLocalValue('');
     } else {
-      return ;
+      return;
     }
   }, [localValue, disabled, onSendMessage, currentConversation, user, stopTyping]);
 
@@ -125,7 +117,7 @@ export default function MessageInputMui({
     <Box>
       {/* Edit Mode Banner */}
       {editingMessageId && (
-        <Alert 
+        <Alert
           severity="info"
           action={
             <Button color="inherit" size="small" onClick={handleCancel} startIcon={<Close />}>
@@ -170,13 +162,13 @@ export default function MessageInputMui({
               padding: { xs: '8px', sm: '12px' },
             }
           }}
-          
+
           InputProps={{
             startAdornment: (
-              <InputAdornment 
-                position="start" 
-                sx={{ 
-                  alignSelf: 'flex-end', 
+              <InputAdornment
+                position="start"
+                sx={{
+                  alignSelf: 'flex-end',
                   mb: { xs: 0.5, sm: 1 },
                   display: { xs: 'none', sm: 'flex' } // Hide on mobile to save space
                 }}
@@ -190,15 +182,15 @@ export default function MessageInputMui({
               </InputAdornment>
             ),
             endAdornment: (
-              <InputAdornment 
-                position="end" 
-                sx={{ 
-                  alignSelf: 'flex-end', 
+              <InputAdornment
+                position="end"
+                sx={{
+                  alignSelf: 'flex-end',
                   mb: { xs: 0.5, sm: 1 }
                 }}
               >
-                <IconButton 
-                  color="primary" 
+                <IconButton
+                  color="primary"
                   onClick={handleSend}
                   disabled={!localValue.trim() || disabled}
                   size={isMobile ? "small" : "medium"}

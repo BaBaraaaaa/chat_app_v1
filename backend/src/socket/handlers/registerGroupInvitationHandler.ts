@@ -103,27 +103,6 @@ export const registerGroupInvitationHandler = (
                     message: result.message,
                     data: result.data
                 });
-
-                // Notify inviter
-                const invitation = result.data.invitation;
-                const inviterSocketId = onlineUsers.find(
-                    u => u.userId === invitation.inviterId._id?.toString()
-                )?.socketId;
-
-                if (inviterSocketId) {
-                    io.to(inviterSocketId).emit("GROUP_INVITATION_STATUS_CHANGED", {
-                        invitation,
-                        status: "accepted"
-                    });
-                }
-
-                // Notify all group members
-                const conversation = result.data.conversation;
-                const roomName = `conversation_${conversation._id}`;
-                io.to(roomName).emit("GROUP_MEMBER_JOINED", {
-                    conversation,
-                    newMember: invitation.inviteeId
-                });
             } else {
                 socket.emit("GROUP_INVITATION_ERROR", {
                     success: false,
@@ -166,19 +145,6 @@ export const registerGroupInvitationHandler = (
                     message: result.message,
                     data: result.data
                 });
-
-                // Notify inviter
-                const invitation = result.data;
-                const inviterSocketId = onlineUsers.find(
-                    u => u.userId === invitation.inviterId._id?.toString()
-                )?.socketId;
-
-                if (inviterSocketId) {
-                    io.to(inviterSocketId).emit("GROUP_INVITATION_STATUS_CHANGED", {
-                        invitation,
-                        status: "declined"
-                    });
-                }
             } else {
                 socket.emit("GROUP_INVITATION_ERROR", {
                     success: false,
@@ -221,19 +187,6 @@ export const registerGroupInvitationHandler = (
                     message: result.message,
                     data: result.data
                 });
-
-                // Notify invitee
-                const invitation = result.data;
-                const inviteeSocketId = onlineUsers.find(
-                    u => u.userId === invitation.inviteeId._id?.toString()
-                )?.socketId;
-
-                if (inviteeSocketId) {
-                    io.to(inviteeSocketId).emit("GROUP_INVITATION_STATUS_CHANGED", {
-                        invitation,
-                        status: "cancelled"
-                    });
-                }
             } else {
                 socket.emit("GROUP_INVITATION_ERROR", {
                     success: false,

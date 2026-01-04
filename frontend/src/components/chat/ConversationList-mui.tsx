@@ -28,6 +28,7 @@ import {
   Archive,
   Group,
   ChatBubbleOutline,
+  Delete,
 } from "@mui/icons-material";
 import type { Conversation } from "@/types/message";
 import { useConversationStore } from "@/stores/useConversationStore";
@@ -310,6 +311,9 @@ function ConversationListMui({
                     },
                     "&:hover": {
                       bgcolor: "action.hover",
+                      "& .delete-btn": {
+                        opacity: 1,
+                      }
                     },
                   }}
                 >
@@ -427,6 +431,24 @@ function ConversationListMui({
                             }}
                           />
                         )}
+                        <IconButton
+                          size="small"
+                          className="delete-btn"
+                          sx={{
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            ml: 1,
+                            color: 'error.main'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm("Xóa cuộc hội thoại này?")) {
+                              useConversationStore.getState().deleteConversation(conversation._id);
+                            }
+                          }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
                       </Box>
                     }
                   />

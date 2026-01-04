@@ -86,7 +86,7 @@ const ChatPanel = () => {
     const latestMessage = currentMessages[currentMessages.length - 1];
 
     //Nếu tin nhắn mới nhất không phải do user gửi thì đánh dấu đã đọc
-    if (latestMessage && latestMessage.senderId._id !== user?._id) {
+    if (latestMessage && latestMessage.senderId?._id !== user?._id) {
       // ✅ Tìm conversation hiện tại để check unreadCount từ store (có thể đã được cập nhật bởi NEW_MESSAGE event)
       const currentConv = conversations.find(
         (c) => c._id === selectedConversation._id
