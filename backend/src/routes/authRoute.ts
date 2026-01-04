@@ -1,16 +1,19 @@
 import { Router } from "express";
-import { signUp,signIn, signOut, refreshToken } from "../controllers/authController";
-
+import { AuthController } from "../controllers/authController";
 
 const router = Router();
+const authController = new AuthController();
 
 // Đăng ký người dùng
-router.post('/register', signUp);
+router.post('/register', (req, res) => authController.signUp(req, res));
 
-router.post('/login', signIn);
+// Đăng nhập
+router.post('/login', (req, res) => authController.signIn(req, res));
 
-router.post('/logout', signOut);
+// Đăng xuất
+router.post('/logout', (req, res) => authController.signOut(req, res));
 
-router.post('/refresh-token', refreshToken);
+// Refresh Token
+router.post('/refresh-token', (req, res) => authController.refreshToken(req, res));
 
 export default router;

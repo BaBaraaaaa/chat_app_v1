@@ -25,9 +25,13 @@ interface MessageState {
     unreadCount: Record<string, number>; // conversationId -> count
     _listenersSetup: boolean;
 
+    //Thêm cursor pagination
+    cursor: Record<string, string | null>; 
+
     // Actions
     sendMessage: (payload: SendMessagePayload) => void;
     getMessages: (conversationId: string, limit?: number, skip?: number) => void;
+    getMessagesByCursor: (conversationId: string, limit?: number, cursor?: string) => void;
     markMessageAsRead: (messageId: string) => void;
     markAllAsRead: (conversationId: string) => void;
     deleteMessage: (messageId: string) => void;
@@ -59,6 +63,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     hasMore: {},
     typingUsers: {},
     unreadCount: {},
+    cursor: {},
     _listenersSetup: false,
 
     // ==================== ACTIONS ====================
@@ -75,7 +80,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     },
 
     /**
-     * Lấy danh sách tin nhắn
+     * Lấy danh sách tin nhắn áp dụng limit-offset Pagination
      */
     getMessages: (conversationId: string, limit = 50, skip = 0) => {
         if (!messageService.isConnected()) {
@@ -85,6 +90,18 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         set({ loading: true });
         messageService.getMessages({ conversationId, limit, skip });
+    },
+    /**
+     * 
+     * Lấy danh sách tin nhắn áp dụng cursor Pagination
+     */
+    getMessagesByCursor: (conversationId: string, limit = 50, cursor?: string) => {
+          if (!messageService.isConnected()) {
+            console.warn("⚠️ Socket chưa kết nối, đợi kết nối để lấy tin nhắn");
+            return;
+        }
+        set({ loading: true });
+        messageService.getMessagesByCursor({ conversationId, limit, nextCursor: cursor });
     },
 
     /**

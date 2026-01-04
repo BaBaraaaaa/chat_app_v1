@@ -1,134 +1,123 @@
 import { Request, Response } from "express";
-import User from "../models/User";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import Session from "../models/Session";
+import { AuthService } from "../services/authService";
 
-const ACCESS_TOKEN_TTL = 15 * 60 * 1000; // Thời gian sống của access token 15p
-const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000; // Thời gian sống của refresh token 7 ngày
-export const signUp = async (req: Request, res: Response) => {
-  try {
-    const { username, email, password, displayName } = req.body;
-    if (!username || !email || !password || !displayName) {
-      return res
-        .status(400)
-        .json({ message: "Vui lòng điền đầy đủ thông tin." });
-    }
-    //kiểm tra user đã tồn tại chưa
-    const duplicateUser = await User.findOne({
-      $or: [{ username }, { email }],
-    });
-    if (duplicateUser) {
-      return res.status(400).json({ message: "Người dùng đã tồn tại." });
-    }
-    //mã hóa mật khẩu
-    const hashedPassword = await bcrypt.hash(password, 10); // 10 là số vòng băm
+export class AuthController {
+  /**
+   * Đăng ký người dùng
+   */
+  async signUp(req: Request, res: Response) {
+    try {
+      const { username, email, password, displayName } = req.body;
+      
+      if (!username || !email || !password || !displayName) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Vui lòng điền đầy đủ thông tin." });
+      }
 
-    //tạo user mới
-    const newUser = new User({
-      username,
-      email,
-      hashedPassword,
-      displayName,
-    });
-    await newUser.save();
-    return res.status(204).json({ message: "Đăng ký thành công." });
-  } catch (error) {
-    return res.status(500).json({ message: "Đã xảy ra lỗi khi signUp." });
-  }
-};
+      const result = await AuthService.signUp({
+        username,
+        email,
+        password,
+        displayName
+      });
 
-export const signIn = async (req: Request, res: Response) => {
-  try {
-    const { username, password } = req.body; // lấy thông tin từ req.body
-    if (!username || !password) {
-      return res
-        .status(400)
-        .json({ message: "Vui lòng điền đầy đủ thông tin." });
+      if (result.success) {
+        return res.status(201).json(result); // 201 Created
+      } else {
+        return res.status(400).json(result);
+      }
+    } catch (error) {
+      return res.status(500).json({ success: false, message: "Lỗi Server khi đăng ký." });
     }
-    // Kiểm tra người dùng
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res
-        .status(401)
-        .json({ message: "Tài khoản hoặc mật khẩu không đúng." });
-    }
-    // Kiểm tra mật khẩu
-    const isMatch = await bcrypt.compare(password, user.hashedPassword);
-    if (!isMatch) {
-      return res
-        .status(401)
-        .json({ message: "Tài khoản hoặc mật khẩu không đúng." });
-    }
-    //Nếu khớp thì tạo access Token
-    const accessToken = jwt.sign(
-      { userId: user._id },
-      process.env.ACCESS_TOKEN_SECRET!,
-      { expiresIn: ACCESS_TOKEN_TTL }
-    );
-    //Tạo refresh token
-    const refreshToken = crypto.getRandomValues(new Uint8Array(64)).toString();
-    //tạo session mới để lưu refresh token
-    await Session.create({
-      userId: user._id,
-      refreshToken,
-      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL), //7 ngày
-    });
-    // trả refesh token về trong cookie
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true, // Chỉ gửi cookie qua HTTPS kết nối
-      sameSite: "none",
-      maxAge: REFRESH_TOKEN_TTL,
-    });
-    return res
-      .status(200)
-      .json({ message: "Đăng nhập thành công.", accessToken });
-  } catch (error) {
-    return res.status(500).json({ message: "Đã xảy ra lỗi khi signIn." });
   }
-};
-export const signOut = async (req: Request, res: Response) => {
-  try {
-    //lấy refesh token từ cookie
-    const refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) {
-      return res.status(400).json({ message: "Không tìm thấy refresh token." });
+
+  /**
+   * Đăng nhập
+   */
+  async signIn(req: Request, res: Response) {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Vui lòng điền đầy đủ thông tin." });
+      }
+
+      const result = await AuthService.signIn({ username, password });
+
+      if (result.success && result.data) {
+        const { refreshToken, maxAge, accessToken } = result.data;
+
+        // Set Cookie
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production', // Use secure in production
+          sameSite: "strict", // Adjust based on requirements
+          maxAge: maxAge,
+        });
+
+        // Return Access Token (without refresh token in body)
+        return res.status(200).json({
+          success: true,
+          message: result.message,
+          accessToken // Client stores this in memory
+        });
+      } else {
+        return res.status(401).json(result);
+      }
+    } catch (error) {
+      return res.status(500).json({ success: false, message: "Lỗi Server khi đăng nhập." });
     }
-    //xóa refresh token khỏi db
-    await Session.deleteOne({ refreshToken });
-    res.clearCookie("refreshToken");
-    return res.status(204).json({ message: "Đăng xuất thành công." });
-  } catch (error) {
-    return res.status(500).json({ message: "Đã xảy ra lỗi khi signOut." });
   }
-};
-export const refreshToken = async (req: Request, res: Response) => {
-  try {
-    //lấy refesh token từ cookie
-    const token = req.cookies?.refreshToken;
-    if (!token) {
-      return res.status(400).json({ message: "Không tìm thấy refresh token." });
+
+  /**
+   * Đăng xuất
+   */
+  async signOut(req: Request, res: Response) {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      
+      if (!refreshToken) {
+        return res.status(400).json({ success: false, message: "Không tìm thấy refresh token." });
+      }
+
+      const result = await AuthService.signOut(refreshToken);
+
+      // Luôn clear cookie dù thành công hay thất bại ở DB để client sạch sẽ
+      res.clearCookie("refreshToken");
+
+      if (result.success) {
+        return res.status(200).json(result);
+      } else {
+        return res.status(400).json(result);
+      }
+    } catch (error) {
+      return res.status(500).json({ success: false, message: "Lỗi Server khi đăng xuất." });
     }
-    //so với refresh token trong db
-    const session = await Session.findOne({ refreshToken: token});
-    if (!session) {
-      return res.status(401).json({ message: "Refresh token không hợp lệ." });
+  }
+
+  /**
+   * Làm mới Access Token
+   */
+  async refreshToken(req: Request, res: Response) {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      
+      if (!refreshToken) {
+        return res.status(401).json({ success: false, message: "Unauthenticated" });
+      }
+
+      const result = await AuthService.refreshToken(refreshToken);
+
+      if (result.success) {
+        return res.status(200).json(result.data); // Return new access token
+      } else {
+        return res.status(403).json(result); // Forbidden if token invalid/expired
+      }
+    } catch (error) {
+      return res.status(500).json({ success: false, message: "Lỗi Server khi refresh token." });
     }
-    //kiểm tra thời gian hết hạn
-    if (session.expiresAt < new Date()) {
-      return res.status(401).json({ message: "Refresh token đã hết hạn." });
-    }
-    //tạo mới access token
-    const accessToken = jwt.sign({
-      userId: session.userId,
-    },process.env.ACCESS_TOKEN_SECRET!,{
-      expiresIn: ACCESS_TOKEN_TTL
-    })
-    //return access token mới
-    return res.status(200).json({ accessToken });
-  } catch (error) {
-    console.error("Lỗi khi làm mới token:", error);
-    return res.status(500).json({ message: "Đã xảy ra lỗi khi làm mới token." });
   }
 }

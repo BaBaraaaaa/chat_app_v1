@@ -30,7 +30,7 @@ const ChatPanel = () => {
     setCurrentConversation,
     _updateConversation,
   } = useConversationStore();
-  const { messages, sendMessage, getMessages, joinConversation } =
+  const { messages, sendMessage, getMessages, joinConversation, getMessagesByCursor } =
     useMessageStore();
 
   // ✅ Load conversations và friends khi connected
@@ -41,8 +41,6 @@ const ChatPanel = () => {
     }
   }, [isConnected, user, getConversations, getFriendsList]);
 
-  // 🚫 REMOVED: Auto-join tất cả conversations
-  // ✅ NEW: Chỉ join conversation khi user thực sự mở nó
 
   // Load messages khi chọn conversation
   useEffect(() => {
@@ -53,8 +51,8 @@ const ChatPanel = () => {
         joinedConversationsRef.current.add(selectedConversation._id);
       }
 
-      getMessages(selectedConversation._id);
-
+      // getMessages(selectedConversation._id);
+      getMessagesByCursor(selectedConversation._id)
       // ✅ Reset unread count khi mở conversation
       if (
         selectedConversation.unreadCount &&
@@ -75,6 +73,7 @@ const ChatPanel = () => {
     isConnected,
     joinConversation,
     getMessages,
+    getMessagesByCursor,
     _updateConversation,
   ]);
   // Tự động đánh dấu đã đọc khi có tin nhắn mới đến TRONG conversation đang mở

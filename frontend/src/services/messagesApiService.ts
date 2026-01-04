@@ -58,6 +58,20 @@ export const messageApiService = {
     );
     return res.data;
   },
+  getMessagesByCursor: async (
+    conversationId: string,
+    limit: number = 50,
+    cursor?: string
+  ): Promise<MessagesResponse> => {
+    const url = cursor
+      ? `/messages/${conversationId}?limit=${limit}&cursor=${cursor}`
+      : `/messages/${conversationId}?limit=${limit}`;
+    const res = await api.get(
+      url,
+      { withCredentials: true }
+    );
+    return res.data;
+  },
 
   /**
    * Đánh dấu tin nhắn đã đọc (REST API fallback)

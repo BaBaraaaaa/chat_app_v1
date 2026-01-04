@@ -156,11 +156,17 @@ export interface NewMessageResponse {
   conversationId: string;
 }
 
-// Get Messages
+// Get Messages dùng limit-offset Pagination
 export interface GetMessagesPayload {
   conversationId: string;
   limit?: number;
   skip?: number;
+}
+//Get Messages dùng cursor Pagination
+export interface GetMessagesByCursorPayload {
+  conversationId: string;
+  limit?: number;
+  nextCursor?: string;
 }
 
 export interface MessagesListResponse {

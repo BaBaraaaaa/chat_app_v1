@@ -180,6 +180,80 @@ export class MessageService {
     }
   }
 
+  static async getMessagesByCursor(
+    conversationId: Types.ObjectId,
+    userId: Types.ObjectId,
+    limit: number = 50,
+    cursor?: string
+  ): Promise<MessageResponse> {
+    try {
+      // Kiểm tra user có quyền xem conversation không
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation) {
+        return {
+          success: false,
+          message: "Cuộc hội thoại không tồn tại"
+        };
+      }
+
+      const isParticipant = conversation.participants.some(
+        p => p.toString() === userId.toString()
+      );
+      if (!isParticipant) {
+        return {
+          success: false,
+          message: "Bạn không có quyền xem tin nhắn trong cuộc hội thoại này"
+        };
+      }
+      // Xây dựng query với cursor nếu có
+      const query: any = {
+        conversationId,
+        isDeleted: false
+      }
+      if (cursor) {
+        query._id = { $lt: new Types.ObjectId(cursor) }; //lấy các message có id nhỏ hơn cursor
+      }
+      else{
+        query._id = { $exists: true }; //lấy tất cả message
+      }
+      // Lấy messages
+      const  message = await Message.find<IMessage>(query)
+      .populate('senderId', 'username displayName avatarUrl firstName lastName')
+      .populate('receiverId', 'username displayName avatarUrl firstName lastName')
+      .populate('replyTo')
+      .sort({ _id: -1 })
+      .limit(limit + 1); //lấy thêm 1 message để kiểm tra còn tin nhắn tiếp theo hay không
+     
+
+      // Xác định hasMore và cursor mới
+      const hasMore = message.length > limit;
+      if (hasMore) {
+        message.pop(); //loại bỏ message thừa
+      }
+      // Cursor mới là id của message cuối cùng trong danh sách
+      const lastMessage = message[message.length - 1];
+      const nextCursor = lastMessage ? lastMessage._id.toString() : null;
+
+      return {
+        success: true,
+        message: "Lấy tin nhắn thành công",
+        data: {
+          messages: message.reverse(), 
+          nextCursor: nextCursor,
+          hasMore
+        }
+      };
+    } catch (error) {
+      console.error("Lỗi lấy tin nhắn:", error);
+      return {
+        success: false,
+        message: "Lỗi lấy tin nhắn",
+        error
+      };
+    }
+  }
+
+
   /**
    * Đánh dấu tin nhắn đã đọc
    */

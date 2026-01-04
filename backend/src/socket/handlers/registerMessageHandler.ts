@@ -172,6 +172,41 @@ export const registerMessageHandler = (
       });
     }
   });
+  // 📥 Lấy danh sách tin nhắn theo cursor
+  socket.on("GET_MESSAGES_BY_CURSOR", async (data: {
+    conversationId: string;
+    limit?: number;
+    cursor?: string;
+  }) => {
+    try {
+      const userId = socket.data.userId;
+      if (!userId) {
+        socket.emit("MESSAGES_ERROR", {
+          success: false,
+          message: "Người dùng chưa được xác thực."
+        });
+        return;
+      }
+
+      const { conversationId, limit = 50, cursor } = data;
+
+      const result = await messageController.getMessagesByCursor(
+        conversationId,
+        userId,
+        limit,
+        cursor
+      );
+
+      socket.emit("MESSAGES_LIST", result);
+
+    } catch (error) {
+      console.error("Lỗi lấy tin nhắn theo cursor qua socket:", error);
+      socket.emit("MESSAGES_ERROR", {
+        success: false,
+        message: "Không thể lấy danh sách tin nhắn."
+      });
+    }
+  });
 
   // ✅ Đánh dấu tin nhắn đã đọc
   socket.on("MARK_MESSAGE_READ", async (data: {

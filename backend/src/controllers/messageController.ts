@@ -38,7 +38,7 @@ export class MessageController {
   }
 
   /**
-   * Lấy danh sách tin nhắn
+   * Lấy danh sách tin nhắn áp dụng limit-offset Pagination
    */
   async getMessages(
     conversationId: Types.ObjectId | string,
@@ -58,6 +58,33 @@ export class MessageController {
       return await MessageService.getMessages(convId, userObjectId, limit, skip);
     } catch (error) {
       console.error("Lỗi trong MessageController.getMessages:", error);
+      return {
+        success: false,
+        message: "Lỗi lấy tin nhắn",
+        error
+      };
+    }
+  }
+  /**
+   * Lấy danh sách tin nhắn áp dụng cursor Pagination
+   */
+  async getMessagesByCursor(
+    conversationId: Types.ObjectId | string,
+    userId: Types.ObjectId | string,
+    limit: number = 50,
+    cursor?: string
+  ) {
+    try {
+      const convId = typeof conversationId === 'string' 
+        ? new Types.ObjectId(conversationId) 
+        : conversationId;
+      
+      const userObjectId = typeof userId === 'string' 
+        ? new Types.ObjectId(userId) 
+        : userId;
+      return await MessageService.getMessagesByCursor(convId, userObjectId, limit, cursor);
+    } catch (error) {
+      console.error("Lỗi trong MessageController.getMessagesByCursor:", error);
       return {
         success: false,
         message: "Lỗi lấy tin nhắn",

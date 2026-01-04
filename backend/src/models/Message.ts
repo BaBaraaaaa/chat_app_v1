@@ -14,6 +14,7 @@ export enum MessageStatus {
 }
 
 export interface IMessage extends Document {
+  _id: Types.ObjectId;
   conversationId: Types.ObjectId;
   senderId: Types.ObjectId;
   receiverId?: Types.ObjectId; // optional cho group chats
