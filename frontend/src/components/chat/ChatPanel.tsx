@@ -156,7 +156,6 @@ const ChatPanel = () => {
         content: content,
         type: "text" as const,
       };
-      // @ts-ignore - Ignore type error for now if receiverId is required in type
       sendMessage(payload);
     } else {
       return;
