@@ -40,13 +40,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ accessToken });
   },
 
+  handleTokenRefresh: async (newToken: string) => {
+    set({ accessToken: newToken });
+    // Reconnect socket with new token
+    socketService.disconnect();
+    await socketService.connect(newToken);
+  },
+
   signUp: async (username: string, password: string, email: string, displayName: string) => {
     try {
       set({ loading: true });
       await authService.signUp(username, password, email, displayName);
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error?.message || "Đăng ký thất bại! Vui lòng thử lại.");
       return { success: false, error };
@@ -75,7 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await socketService.connect(accessToken);
 
       toast.success("Đăng nhập thành công!");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error?.message || "Đăng nhập thất bại! Vui lòng kiểm tra lại thông tin.");
     } finally {
@@ -163,7 +170,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.signOut();
       get().clearState();
       toast.success("Đăng xuất thành công!");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error?.message || "Đăng xuất thất bại!");
     } finally {

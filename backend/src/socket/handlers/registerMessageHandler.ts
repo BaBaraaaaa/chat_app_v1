@@ -143,82 +143,7 @@ export const registerMessageHandler = (
     }
   });
 
-  // 📥 Lấy danh sách tin nhắn
-  socket.on("GET_MESSAGES", async (data: {
-    conversationId: string;
-    limit?: number;
-    skip?: number;
-  }) => {
-    try {
-      const userId = socket.data.userId;
-      if (!userId) {
-        socket.emit("MESSAGES_ERROR", {
-          success: false,
-          message: "Người dùng chưa được xác thực."
-        });
-        return;
-      }
 
-      const { conversationId, limit = 50, skip = 0 } = data;
-
-      const result = await messageController.getMessages(
-        conversationId,
-        userId,
-        limit,
-        skip
-      );
-
-      socket.emit("MESSAGES_LIST", result);
-
-    } catch (error) {
-      console.error("Lỗi lấy tin nhắn qua socket:", error);
-      socket.emit("MESSAGES_ERROR", {
-        success: false,
-        message: "Không thể lấy danh sách tin nhắn."
-      });
-    }
-  });
-  // 📥 Lấy danh sách tin nhắn theo cursor
-  socket.on("GET_MESSAGES_BY_CURSOR", async (data: {
-    conversationId: string;
-    limit?: number;
-    cursor?: string;
-  }) => {
-    try {
-      const userId = socket.data.userId;
-      if (!userId) {
-        socket.emit("MESSAGES_ERROR", {
-          success: false,
-          message: "Người dùng chưa được xác thực."
-        });
-        return;
-      }
-
-      const { conversationId, limit = 50, cursor } = data;
-
-      const result = await messageController.getMessagesByCursor(
-        conversationId,
-        userId,
-        limit,
-        cursor
-      );
-
-      socket.emit("MESSAGES_LIST", {
-        ...result,
-        data: {
-          ...result.data,
-          isPagination: !!cursor // True if cursor exists (Load More), False if initial load
-        }
-      });
-
-    } catch (error) {
-      console.error("Lỗi lấy tin nhắn theo cursor qua socket:", error);
-      socket.emit("MESSAGES_ERROR", {
-        success: false,
-        message: "Không thể lấy danh sách tin nhắn."
-      });
-    }
-  });
 
   // ✅ Đánh dấu tin nhắn đã đọc
   socket.on("MARK_MESSAGE_READ", async (data: {
@@ -444,34 +369,7 @@ export const registerMessageHandler = (
     }
   });
 
-  // 📊 Lấy số lượng tin nhắn chưa đọc
-  socket.on("GET_UNREAD_COUNT", async (data?: {
-    conversationId?: string;
-  }) => {
-    try {
-      const userId = socket.data.userId;
-      if (!userId) {
-        socket.emit("UNREAD_COUNT_ERROR", {
-          success: false,
-          message: "Người dùng chưa được xác thực."
-        });
-        return;
-      }
 
-      const result = await messageController.getUnreadCount(
-        userId,
-        data?.conversationId
-      );
-
-      socket.emit("UNREAD_COUNT", result);
-    } catch (error) {
-      console.error("Lỗi lấy unread count qua socket:", error);
-      socket.emit("UNREAD_COUNT_ERROR", {
-        success: false,
-        message: "Không thể lấy số lượng tin nhắn chưa đọc."
-      });
-    }
-  });
 
   // 🔗 Join conversation room (để nhận real-time updates)
   socket.on("JOIN_CONVERSATION", (data: {

@@ -52,8 +52,8 @@ api.interceptors.response.use(
         const res = await api.post("/auth/refresh-token");
         const newAccessToken = res.data.accessToken;
 
-        // Cập nhật token mới
-        useAuthStore.getState().setAccessToken(newAccessToken);
+        // Cập nhật token mới và reconnect socket
+        await useAuthStore.getState().handleTokenRefresh(newAccessToken);
 
         // Retry request gốc với token mới
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

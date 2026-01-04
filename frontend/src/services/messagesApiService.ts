@@ -19,6 +19,7 @@ interface MessagesResponse {
     messages: Message[];
     total: number;
     hasMore: boolean;
+    nextCursor?: string;
   };
   error?: unknown;
 }
@@ -132,7 +133,7 @@ export const messageApiService = {
     const url = conversationId
       ? `/messages/unread-count?conversationId=${conversationId}`
       : `/messages/unread-count`;
-    
+
     const res = await api.get(url, { withCredentials: true });
     return res.data;
   }

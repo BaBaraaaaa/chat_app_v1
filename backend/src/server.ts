@@ -13,6 +13,8 @@ import { registerSocketHandlers } from './socket/registerSocketHandlers';
 import { socketAuthMiddleware } from './middleware/socketAuthMiddleware';
 import conversationRoute from './routes/conversationsRoute';
 import { testCloudinaryConfig } from './utils/testCloudinary';
+import messageRoute from './routes/messageRoute';
+
 // Cấu hình dotenv để sử dụng biến môi trường từ file .env
 dotenv.config();
 
@@ -51,8 +53,8 @@ app.use('/api/auth/', authRoute);
 app.get('/health', async (req: Request, res: Response) => {
   try {
     const cloudinaryTest = await testCloudinaryConfig();
-    res.status(200).json({ 
-      status: 'OK', 
+    res.status(200).json({
+      status: 'OK',
       message: 'Server is running',
       timestamp: new Date().toISOString(),
       socketIO: 'enabled',
@@ -87,23 +89,24 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/api/user', userRoute);
 app.use("/api/friends", friendRequestRoute);
 app.use("/api/conversations", conversationRoute);
+app.use("/api/messages", messageRoute);
 
 // Đăng ký socket handlers
 registerSocketHandlers(io);
 
 // Middleware để log socket connections
 io.on('connection', (socket) => {
-  
+
   socket.on('disconnect', (reason) => {
   });
 });
 
 // Kết nối database và khởi động server
 connectDb().then(() => {
-    server.listen(PORT, () => {
-    });
+  server.listen(PORT, () => {
+  });
 }).catch((error) => {
-    console.error("❌ Lỗi kết nối database:", error);
-    process.exit(1);
+  console.error("❌ Lỗi kết nối database:", error);
+  process.exit(1);
 });
 

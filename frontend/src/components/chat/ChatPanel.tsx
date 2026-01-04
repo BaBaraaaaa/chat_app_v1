@@ -11,6 +11,7 @@ import { useFriendStore } from "@/stores/useFriendStore";
 import type { Conversation } from "@/types/message";
 import type { Contact } from "../../types/chat";
 import { conversationApiService } from "@/services/conversationApiService";
+import type { Friend } from "@/types/store";
 
 const ChatPanel = () => {
   const [selectedConversation, setSelectedConversation] =
@@ -186,7 +187,7 @@ const ChatPanel = () => {
     // ✅ Nếu đã load xong friends → check trong list
     // Nếu friends.length = 0 → user không có bạn nào → otherUser chắc chắn không phải bạn
     // Nếu friends.length > 0 → check có trong list không
-    const result = friends.some((friend) => friend._id === otherUser._id);
+    const result = friends.some((friend: Friend) => friend._id === otherUser._id);
     return result;
   }, [selectedConversation, user, friends, friendsLoading]);
 

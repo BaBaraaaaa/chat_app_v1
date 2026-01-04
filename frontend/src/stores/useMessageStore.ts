@@ -6,6 +6,7 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 import { messageService } from "@/socket/messageService";
+import { messageApiService } from "@/services/messagesApiService";
 import { useConversationStore } from "./useConversationStore";
 import { useAuthStore } from "./useAuthStore";
 import type {
@@ -89,26 +90,64 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     /**
      * Lấy danh sách tin nhắn áp dụng limit-offset Pagination
      */
-    getMessages: (conversationId: string, limit = 50, skip = 0) => {
-        if (!messageService.isConnected()) {
-            console.warn("⚠️ Socket chưa kết nối, đợi kết nối để lấy tin nhắn");
-            return;
-        }
+    getMessages: async (conversationId: string, limit = 50, skip = 0) => {
+        try {
+            set({ loading: true });
+            const response = await messageApiService.getMessages(conversationId, limit, skip);
 
-        set({ loading: true });
-        messageService.getMessages({ conversationId, limit, skip });
+            if (response.success && response.data) {
+                // Filter out deleted messages
+                const activeMessages = response.data.messages.filter(msg => !msg.isDeleted);
+
+                get()._setMessages(
+                    conversationId,
+                    activeMessages,
+                    response.data.total,
+                    response.data.hasMore,
+                    false // Initial load (limit-offset) typically treats as replace or append? Usually replace for first page.
+                );
+            } else {
+                toast.error("Không thể tải tin nhắn");
+            }
+        } catch (error) {
+            console.error("Failed to load messages:", error);
+            toast.error("Lỗi khi tải tin nhắn");
+        } finally {
+            set({ loading: false });
+        }
     },
     /**
      * 
      * Lấy danh sách tin nhắn áp dụng cursor Pagination
      */
-    getMessagesByCursor: (conversationId: string, limit = 50, cursor?: string) => {
-        if (!messageService.isConnected()) {
-            console.warn("⚠️ Socket chưa kết nối, đợi kết nối để lấy tin nhắn");
-            return;
+    getMessagesByCursor: async (conversationId: string, limit = 50, cursor?: string) => {
+        try {
+            set({ loading: true });
+            const response = await messageApiService.getMessagesByCursor(conversationId, limit, cursor);
+
+            if (response.success && response.data) {
+                // Filter out deleted messages
+                const activeMessages = response.data.messages.filter(msg => !msg.isDeleted);
+
+                const isPagination = !!cursor; // If cursor exists, it's a pagination request
+
+                get()._setMessages(
+                    conversationId,
+                    activeMessages,
+                    response.data.total,
+                    response.data.hasMore,
+                    isPagination,
+                    response.data.nextCursor
+                );
+            } else {
+                toast.error("Không thể tải tin nhắn");
+            }
+        } catch (error) {
+            console.error("Failed to load messages via cursor:", error);
+            toast.error("Lỗi khi tải tin nhắn");
+        } finally {
+            set({ loading: false });
         }
-        set({ loading: true });
-        messageService.getMessagesByCursor({ conversationId, limit, cursor: cursor });
     },
 
     /**
@@ -278,28 +317,8 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         });
 
         // Listen for messages list
-        messageService.onMessagesList((data) => {
-            if (data.success && data.data) {
-                const conversationId = data.data.messages[0]?.conversationId;
-                if (conversationId) {
-                    // Filter out deleted messages
-                    const activeMessages = data.data.messages.filter(msg => !msg.isDeleted);
-
-                    get()._setMessages(
-                        conversationId,
-                        activeMessages,
-                        data.data.total,
-                        data.data.hasMore,
-                        data.data.isPagination,
-                        data.data.nextCursor
-                    );
-                }
-                set({ loading: false });
-            } else {
-                set({ loading: false });
-                toast.error("Không thể tải tin nhắn");
-            }
-        });
+        // Listen for messages list - REMOVED (Moved to REST API)
+        // messageService.onMessagesList((data) => { ... });
 
         // Listen for message read
         messageService.onMessageRead((data) => {
