@@ -14,8 +14,10 @@ import {
   ListItemText,
   Button,
   DialogActions,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import { Search, ChatBubbleOutline } from '@mui/icons-material';
+import { Search } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useFriendStore } from '@/stores/useFriendStore';
 import { useConversationStore } from '@/stores/useConversationStore';
@@ -40,6 +42,9 @@ export function NewChatDialogMui({
 
   const { friends, loading: loadingFriends, getFriendsList } = useFriendStore();
   const { getOrCreateConversation } = useConversationStore();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     if (open) {
@@ -118,7 +123,13 @@ export function NewChatDialogMui({
   const isGroupMode = selectedFriends.length > 1;
 
   return (
-    <Dialog open={open} onClose={() => onOpenChange(false)} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={() => onOpenChange(false)}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={isMobile}
+    >
       <DialogTitle component="div">
         <Typography component="h6" fontWeight={600}>
           {isGroupMode ? "Tạo nhóm mới" : "Bắt đầu cuộc trò chuyện mới"}

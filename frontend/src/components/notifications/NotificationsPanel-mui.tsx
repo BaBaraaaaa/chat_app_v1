@@ -3,8 +3,8 @@ import { Notifications as NotificationsIcon } from '@mui/icons-material';
 
 export default function NotificationsPanelMui() {
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Paper sx={{ p: 3, m: 2, borderRadius: 2 }} elevation={2}>
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: 'background.default' }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, m: { xs: 1, sm: 2 }, borderRadius: 2 }} elevation={2}>
         <Stack spacing={3}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

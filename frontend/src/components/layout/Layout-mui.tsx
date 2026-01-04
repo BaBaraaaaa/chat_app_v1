@@ -51,7 +51,7 @@ export default function LayoutMui({ children, activeView, onViewChange, notifica
         )}
 
         {/* Content Area */}
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+        <Box sx={{ flex: 1, overflow: 'hidden', bgcolor: 'background.default' }}>
           {children}
         </Box>
       </Box>

@@ -58,8 +58,6 @@ const ChatAppPage = () => {
         {renderMainContent()}
       </LayoutMui>
 
-      {/* Socket Debug Panel - Remove in production */}
-      {/* <SocketDebugPanel /> */}
     </>
   );
 };

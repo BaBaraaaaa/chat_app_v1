@@ -17,6 +17,8 @@ import {
   IconButton,
   Grid,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   PersonAdd,
@@ -39,6 +41,8 @@ import GroupInvitationsPanelMui from './GroupInvitationsPanel-mui';
 
 const FriendsMainContentMui = () => {
   const { user } = useAuthStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { onlineUsers } = useSocketStore();
   const isUserOnline = (userId: string) => onlineUsers.includes(userId);
 
@@ -209,11 +213,12 @@ const FriendsMainContentMui = () => {
               />
             )}
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
             <Button
               onClick={() => setActiveSubView('friends')}
               variant={activeSubView === 'friends' ? 'contained' : 'text'}
               size="small"
+              sx={{ minWidth: { xs: 80, sm: 'auto' } }}
             >
               Bạn bè
             </Button>
@@ -221,15 +226,17 @@ const FriendsMainContentMui = () => {
               onClick={() => setActiveSubView('group_invitations')}
               variant={activeSubView === 'group_invitations' ? 'contained' : 'text'}
               size="small"
+              sx={{ minWidth: { xs: 80, sm: 'auto' } }}
             >
-              Lời mời vào nhóm
+              {isMobile ? 'Lời mời' : 'Lời mời vào nhóm'}
             </Button>
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+            {!isMobile && <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />}
             <Button
               onClick={handleRefresh}
               variant="outlined"
               size="small"
               disabled={isLoading}
+              title="Làm mới"
               startIcon={
                 <Refresh
                   sx={{
@@ -242,15 +249,16 @@ const FriendsMainContentMui = () => {
                 />
               }
             >
-              Làm mới
+              {!isMobile && 'Làm mới'}
             </Button>
             <Button
               onClick={() => setIsAddDialogOpen(true)}
               variant="contained"
               size="small"
+              title="Thêm bạn"
               startIcon={<PersonAdd />}
             >
-              Thêm bạn
+              {!isMobile && 'Thêm bạn'}
             </Button>
           </Box>
         </Box>
@@ -442,13 +450,13 @@ const FriendsMainContentMui = () => {
                   <CardContent>
                     <Grid container spacing={1.5}>
                       {friends.map((friend: Friend) => (
-                        <Grid sx={{ xs: 12, md: 6, lg: 4 }} key={friend._id}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={friend._id}>
                           <Box
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              p: 2,
+                              p: { xs: 1.5, sm: 2 },
                               border: 1,
                               borderColor: 'divider',
                               borderRadius: 2,

@@ -6,6 +6,9 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
+  IconButton,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Settings,
@@ -17,6 +20,7 @@ import {
   Storage,
   HelpOutline,
   Info,
+  ArrowBack,
 } from "@mui/icons-material";
 import { useAuthStore } from "@/stores/useAuthStore";
 import ProfileSection from "./ProfileSection";
@@ -26,7 +30,10 @@ import AppearanceSection from "./AppearanceSection";
 
 export default function SettingsPanelMui() {
   const { user } = useAuthStore();
-  const [activeSection, setActiveSection] = useState("profile");
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  const [activeSection, setActiveSection] = useState<string | null>(isMobile ? null : "profile");
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
@@ -93,11 +100,11 @@ export default function SettingsPanelMui() {
   );
 
   const renderPrivacySection = () => (
-    <PrivacySection/>
+    <PrivacySection />
   );
 
   const renderAppearanceSection = () => (
-   <AppearanceSection/>
+    <AppearanceSection />
   );
 
   const renderSection = () => {
@@ -121,58 +128,89 @@ export default function SettingsPanelMui() {
   };
 
   return (
-    <Box sx={{ display: "flex", flex: 1, height: "100%" }}>
+    <Box sx={{ display: "flex", flex: 1, height: "100%", overflow: 'hidden' }}>
       {/* Settings Menu */}
-      <Box
-        sx={{
-          width: 320,
-          bgcolor: "background.paper",
-          borderRight: 1,
-          borderColor: "divider",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-          <Typography variant="h6" fontWeight={600}>
-            Cài đặt
-          </Typography>
-        </Box>
+      {(!isMobile || !activeSection) && (
+        <Box
+          sx={{
+            width: { xs: '100%', md: 320 },
+            bgcolor: "background.paper",
+            borderRight: { xs: 0, md: 1 },
+            borderColor: "divider",
+            display: "flex",
+            flexDirection: "column",
+            height: '100%'
+          }}
+        >
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+            <Typography variant="h6" fontWeight={600}>
+              Cài đặt
+            </Typography>
+          </Box>
 
-        <Box sx={{ flex: 1, overflowY: "auto" }}>
-          <List>
-            {settingSections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <ListItemButton
-                  key={section.id}
-                  selected={activeSection === section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  sx={{ py: 1.5 }}
-                >
-                  <ListItemIcon>
-                    <Icon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={section.label}
-                    secondary={section.description}
-                    primaryTypographyProps={{
-                      variant: "body2",
-                      fontWeight: 500,
-                    }}
-                    secondaryTypographyProps={{ variant: "caption" }}
-                  />
-                </ListItemButton>
-              );
-            })}
-          </List>
+          <Box sx={{ flex: 1, overflowY: "auto" }}>
+            <List>
+              {settingSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <ListItemButton
+                    key={section.id}
+                    selected={activeSection === section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    sx={{ py: 1.5 }}
+                  >
+                    <ListItemIcon>
+                      <Icon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={section.label}
+                      secondary={section.description}
+                      primaryTypographyProps={{
+                        variant: "body2",
+                        fontWeight: 500,
+                      }}
+                      secondaryTypographyProps={{ variant: "caption" }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </Box>
         </Box>
-      </Box>
+      )}
 
       {/* Settings Content */}
-      <Box sx={{ flex: 1, overflowY: "auto" }}>
-        <Box sx={{ p: 3 }}>{renderSection()}</Box>
-      </Box>
+      {(!isMobile || activeSection) && (
+        <Box sx={{
+          flex: 1,
+          overflowY: "auto",
+          display: isMobile && !activeSection ? 'none' : 'block',
+          bgcolor: 'background.default'
+        }}>
+          {isMobile && activeSection && (
+            <Box sx={{
+              p: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              borderBottom: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              position: 'sticky',
+              top: 0,
+              zIndex: 1
+            }}>
+              <IconButton onClick={() => setActiveSection(null)} size="small">
+                <ArrowBack />
+              </IconButton>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {settingSections.find(s => s.id === activeSection)?.label}
+              </Typography>
+            </Box>
+          )}
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>{renderSection()}</Box>
+        </Box>
+      )}
     </Box>
   );
 }
