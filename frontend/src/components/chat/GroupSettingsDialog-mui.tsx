@@ -27,6 +27,7 @@ import {
     CameraAlt,
 } from '@mui/icons-material';
 import { useState, useMemo, useRef } from 'react';
+import { useGroupInvitationStore } from '@/stores/useGroupInvitationStore';
 import { useConversationStore } from '@/stores/useConversationStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useFriendStore } from '@/stores/useFriendStore';
@@ -40,9 +41,10 @@ interface GroupSettingsDialogProps {
 }
 
 export function GroupSettingsDialogMui({ open, onOpenChange }: GroupSettingsDialogProps) {
-    const { currentConversation, addParticipants, removeParticipant, leaveGroup, updateGroupAvatar } = useConversationStore();
+    const { currentConversation, removeParticipant, leaveGroup, updateGroupAvatar } = useConversationStore();
     const { user } = useAuthStore();
     const { friends, getFriendsList } = useFriendStore();
+    const { sendInvitation } = useGroupInvitationStore();
 
     const [activeTab, setActiveTab] = useState<'members' | 'add_members'>('members');
     const [searchQuery, setSearchQuery] = useState('');
@@ -82,17 +84,21 @@ export function GroupSettingsDialogMui({ open, onOpenChange }: GroupSettingsDial
         }
     };
 
-    const handleAddMembers = async () => {
+    const handleSendInvitations = async () => {
         if (!currentConversation) return;
         if (selectedFriendsToAdd.length === 0) return;
 
         setProcessing(true);
-        await addParticipants(currentConversation._id, selectedFriendsToAdd);
-        setProcessing(false);
-
-        // Reset selection and switch back to members list
-        setSelectedFriendsToAdd([]);
-        setActiveTab('members');
+        try {
+            await sendInvitation(currentConversation._id, selectedFriendsToAdd);
+            // Reset selection and switch back to members list
+            setSelectedFriendsToAdd([]);
+            setActiveTab('members');
+        } catch (error) {
+            console.error("Lỗi gửi lời mời:", error);
+        } finally {
+            setProcessing(false);
+        }
     };
 
     const toggleFriendSelection = (friendId: string) => {
@@ -346,10 +352,10 @@ export function GroupSettingsDialogMui({ open, onOpenChange }: GroupSettingsDial
                         <Button onClick={() => setActiveTab('members')}>Hủy</Button>
                         <Button
                             variant="contained"
-                            onClick={handleAddMembers}
+                            onClick={handleSendInvitations}
                             disabled={selectedFriendsToAdd.length === 0 || processing}
                         >
-                            Thêm
+                            Mời
                         </Button>
                     </>
                 )}

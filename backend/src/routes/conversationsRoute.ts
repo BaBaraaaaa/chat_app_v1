@@ -198,6 +198,23 @@ router.delete("/:id/participants", async (req: Request, res: Response) => {
     const result = await conversationController.removeParticipant(conversationId, userId, participantId);
 
     if (result.success) {
+      const io = req.app.get("io");
+      if (io) {
+        // Thông báo cho người bị xóa
+        io.to(`user_${participantId}`).emit("GROUP_MEMBER_REMOVED", {
+          conversationId,
+          message: "Bạn đã bị xóa khỏi nhóm",
+          removedBy: userId
+        });
+
+        // Thông báo cho cả nhóm
+        io.to(`conversation_${conversationId}`).emit("GROUP_MEMBER_REMOVED", {
+          conversationId,
+          participantId,
+          updatedConversation: result.data,
+          message: "Một thành viên đã bị xóa khỏi nhóm"
+        });
+      }
       res.json(result);
     } else {
       res.status(400).json(result);
@@ -219,6 +236,16 @@ router.post("/:id/leave", async (req: Request, res: Response) => {
     const result = await conversationController.leaveConversation(conversationId, userId);
 
     if (result.success) {
+      const io = req.app.get("io");
+      if (io) {
+        // Thông báo cho cả nhóm
+        io.to(`conversation_${conversationId}`).emit("GROUP_MEMBER_LEFT", {
+          conversationId,
+          userId,
+          updatedConversation: result.data.conversation,
+          message: "Một thành viên đã rời nhóm"
+        });
+      }
       res.json(result);
     } else {
       res.status(400).json(result);

@@ -14,6 +14,8 @@ import { socketAuthMiddleware } from './middleware/socketAuthMiddleware';
 import conversationRoute from './routes/conversationsRoute';
 import { testCloudinaryConfig } from './utils/testCloudinary';
 import messageRoute from './routes/messageRoute';
+import groupInvitationRoute from './routes/groupInvitationsRoute';
+
 
 // Cấu hình dotenv để sử dụng biến môi trường từ file .env
 dotenv.config();
@@ -37,9 +39,6 @@ const io = new Server(server, {
 io.use(socketAuthMiddleware);
 
 const PORT = process.env.PORT || 5000;
-const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
-const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY!;
-const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET!;
 
 // Middleware để phân tích JSON
 app.use(express.json());
@@ -90,6 +89,7 @@ app.use('/api/user', userRoute);
 app.use("/api/friends", friendRequestRoute);
 app.use("/api/conversations", conversationRoute);
 app.use("/api/messages", messageRoute);
+app.use("/api/group-invitations", groupInvitationRoute);
 
 // Đăng ký socket handlers
 registerSocketHandlers(io);

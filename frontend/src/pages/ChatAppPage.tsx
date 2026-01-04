@@ -7,14 +7,18 @@ import SettingsPanelMui from "@/components/settings/SettingsPanel-mui";
 import { useSocket } from "@/hooks/useSocket";
 import { useConversationStore } from "@/stores/useConversationStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useSocketStore } from "@/stores/useSocketStore";
-// import { SocketDebugPanel } from "@/components/debug/SocketDebugPanel";
+
+import { useGroupInvitationStore } from "@/stores/useGroupInvitationStore";
+import { useFriendStore } from "@/stores/useFriendStore";
 
 const ChatAppPage = () => {
   const [activeView, setActiveView] = useState<'chat' | 'friends' | 'settings' | 'notifications'>('chat');
   const { totalUnreadCount, getTotalUnreadCount } = useConversationStore();
   const { user } = useAuthStore();
-  const { isConnected } = useSocketStore(); // Assuming useSocketStore is available or import it. Wait, I should import useSocketStore correctly or check if useSocket hook returns it.
+  const { receivedInvitations } = useGroupInvitationStore();
+  const { receivedRequests } = useFriendStore();
+
+  const totalNotifications = receivedRequests.length + receivedInvitations.length;
 
   // Initialize Socket connection
   useSocket();
@@ -48,7 +52,7 @@ const ChatAppPage = () => {
       <LayoutMui
         activeView={activeView}
         onViewChange={setActiveView}
-        notificationCount={0}
+        notificationCount={totalNotifications}
         unreadMessageCount={totalUnreadCount}
       >
         {renderMainContent()}

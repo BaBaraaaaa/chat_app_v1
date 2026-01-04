@@ -13,14 +13,14 @@ interface MessageItemProps {
   onReply?: (messageId: string) => void;
 }
 
- function MessageItemMui({ 
-  message, 
-  isOwn, 
+function MessageItemMui({
+  message,
+  isOwn,
   senderName,
   senderAvatar,
   onEdit,
   onDelete,
-  onReply 
+  onReply
 }: MessageItemProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -35,16 +35,16 @@ interface MessageItemProps {
 
   const formatTime = (dateString: string) => {
     if (!dateString) return '';
-    
+
     const date = new Date(dateString);
-    
+
     if (isNaN(date.getTime())) {
       if (/^\d{1,2}:\d{2}$/.test(dateString)) {
         return dateString;
       }
       return '';
     }
-    
+
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
@@ -65,10 +65,45 @@ interface MessageItemProps {
     }
   };
 
+  if (message.type === 'system') {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          my: 2,
+          width: '100%'
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            px: 2,
+            py: 0.5,
+            bgcolor: 'action.hover',
+            borderRadius: '16px',
+            maxWidth: '90%'
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              textAlign: 'center',
+              display: 'block'
+            }}
+          >
+            {message.content}
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
+    <Box
+      sx={{
+        display: 'flex',
         justifyContent: isOwn ? 'flex-end' : 'flex-start',
         mb: 1,
         '&:hover .message-actions': {
@@ -78,8 +113,8 @@ interface MessageItemProps {
     >
       <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, maxWidth: { xs: '85%', sm: '70%' } }}>
         {!isOwn && (
-          <Avatar 
-            src={senderAvatar} 
+          <Avatar
+            src={senderAvatar}
             alt={senderName}
             sx={{ width: 32, height: 32, bgcolor: 'grey.400', fontSize: '0.875rem' }}
           >
@@ -98,10 +133,10 @@ interface MessageItemProps {
             }}
           >
             {message.isEdited && (
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  fontStyle: 'italic', 
+              <Typography
+                variant="caption"
+                sx={{
+                  fontStyle: 'italic',
                   opacity: 0.7,
                   display: 'block',
                   mb: 0.5
@@ -111,9 +146,9 @@ interface MessageItemProps {
               </Typography>
             )}
 
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word'
               }}
@@ -121,13 +156,13 @@ interface MessageItemProps {
               {message.content}
             </Typography>
 
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                opacity: 0.7, 
+            <Typography
+              variant="caption"
+              sx={{
+                opacity: 0.7,
                 display: 'flex',
                 alignItems: 'center',
-                mt: 0.5 
+                mt: 0.5
               }}
             >
               {formatTime(message.createdAt)}
@@ -141,7 +176,7 @@ interface MessageItemProps {
                 size="small"
                 className="message-actions"
                 onClick={handleMenuOpen}
-                sx={{ 
+                sx={{
                   opacity: { xs: 1, sm: 0 },
                   transition: 'opacity 0.2s'
                 }}
@@ -163,7 +198,7 @@ interface MessageItemProps {
                 }}
               >
                 {onEdit && (
-                  <MenuItem onClick={() => { onEdit(message._id); handleMenuClose(); }}>
+                  <MenuItem onClick={() => { onEdit?.(message._id); handleMenuClose(); }}>
                     <ListItemIcon>
                       <Edit fontSize="small" />
                     </ListItemIcon>
@@ -171,7 +206,7 @@ interface MessageItemProps {
                   </MenuItem>
                 )}
                 {onReply && (
-                  <MenuItem onClick={() => { onReply(message._id); handleMenuClose(); }}>
+                  <MenuItem onClick={() => { onReply?.(message._id); handleMenuClose(); }}>
                     <ListItemIcon>
                       <Reply fontSize="small" />
                     </ListItemIcon>
@@ -179,7 +214,7 @@ interface MessageItemProps {
                   </MenuItem>
                 )}
                 {onDelete && (
-                  <MenuItem onClick={() => { onDelete(message._id); handleMenuClose(); }} sx={{ color: 'error.main' }}>
+                  <MenuItem onClick={() => { onDelete?.(message._id); handleMenuClose(); }} sx={{ color: 'error.main' }}>
                     <ListItemIcon>
                       <Delete fontSize="small" color="error" />
                     </ListItemIcon>

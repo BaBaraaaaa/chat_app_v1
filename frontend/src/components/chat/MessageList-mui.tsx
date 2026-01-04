@@ -221,17 +221,17 @@ function MessageListMui({ messages, onEdit, onDelete, onLoadMore, hasMore, loadi
       <MessageItemMui
         key={message._id}
         message={message}
-        isOwn={message.senderId._id === user?._id}
+        isOwn={message.senderId?._id === user?._id}
         senderName={
-          message.senderId._id === user?._id
+          message.senderId?._id === user?._id
             ? user.displayName
-            : message.senderId.displayName ||
-            message.senderId.username
+            : message.senderId?.displayName ||
+            message.senderId?.username || "Hệ thống"
         }
         senderAvatar={
-          message.senderId._id === user?._id
+          message.senderId?._id === user?._id
             ? user?.avatarUrl
-            : message.senderId.avatarUrl
+            : message.senderId?.avatarUrl
         }
         onEdit={handleEdit}
         onDelete={handleDeleteClick}

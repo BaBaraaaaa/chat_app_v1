@@ -515,4 +515,40 @@ export class MessageService {
       };
     }
   }
+
+  /**
+   * Tạo tin nhắn hệ thống
+   */
+  static async sendSystemMessage(conversationId: Types.ObjectId, content: string): Promise<MessageResponse> {
+    try {
+      const newMessage = await Message.create({
+        conversationId,
+        senderId: new Types.ObjectId("000000000000000000000000"), // System ID placeholder
+        content,
+        type: MessageType.SYSTEM,
+        status: MessageStatus.SENT
+      });
+
+      // Update last message
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: {
+          content,
+          senderId: new Types.ObjectId("000000000000000000000000"),
+          sentAt: new Date(),
+          type: MessageType.SYSTEM
+        }
+      });
+
+      const populatedMessage = await Message.findById(newMessage._id);
+
+      return {
+        success: true,
+        message: "Đã tạo tin nhắn hệ thống",
+        data: populatedMessage
+      };
+    } catch (error) {
+      console.error("Lỗi tạo tin nhắn hệ thống:", error);
+      return { success: false, message: "Lỗi tạo tin nhắn hệ thống", error };
+    }
+  }
 }

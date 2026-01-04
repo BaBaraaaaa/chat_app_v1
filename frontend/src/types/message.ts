@@ -136,6 +136,29 @@ export interface Conversation {
   updatedAt: string;
 }
 
+// ==================== GROUP INVITATION TYPES ====================
+
+export const InvitationStatus = {
+  PENDING: "pending",
+  ACCEPTED: "accepted",
+  DECLINED: "declined",
+  CANCELLED: "cancelled"
+} as const;
+
+export type InvitationStatus = typeof InvitationStatus[keyof typeof InvitationStatus];
+
+export interface GroupInvitation {
+  _id: string;
+  conversationId: Conversation | string;
+  inviterId: ConversationParticipant | string;
+  inviteeId: ConversationParticipant | string;
+  status: InvitationStatus;
+  message?: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== SOCKET EVENT TYPES ====================
 
 // Send Message
@@ -146,6 +169,19 @@ export interface SendMessagePayload {
   type?: MessageType;
   attachments?: MessageAttachment[];
   replyTo?: string;
+}
+
+// Group Invitation
+export interface SendGroupInvitationPayload {
+  conversationId: string;
+  inviteeIds: string[];
+  message?: string;
+}
+
+export interface GroupInvitationResponse {
+  success: boolean;
+  message: string;
+  data: any;
 }
 
 export interface MessageSentResponse {

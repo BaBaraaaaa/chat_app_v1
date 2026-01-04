@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { registerFriendRequestHandler } from "./handlers/registerFriendRequestHandler";
 import { registerMessageHandler } from "./handlers/registerMessageHandler";
 import { registerConversationHandler } from "./handlers/registerConversationHandler";
+import { registerGroupInvitationHandler } from "./handlers/registerGroupInvitationHandler";
 
 interface OnlineUser {
   userId: string;
@@ -14,6 +15,11 @@ export const registerSocketHandlers = (io: Server) => {
     // ✅ userId đã được set bởi socketAuthMiddleware
     const userId = socket.data.userId;
 
+    // ✅ Join personal room for targeted notifications
+    if (userId) {
+      socket.join(`user_${userId}`);
+    }
+
     // ✅ Đăng ký friend request handlers Ở CONNECTION LEVEL (1 lần per connection)
     registerFriendRequestHandler(io, socket, onlineUsers);
 
@@ -22,6 +28,9 @@ export const registerSocketHandlers = (io: Server) => {
 
     // ✅ Đăng ký conversation handlers Ở CONNECTION LEVEL (1 lần per connection)
     registerConversationHandler(io, socket, onlineUsers);
+
+    // ✅ Đăng ký group invitation handlers Ở CONNECTION LEVEL
+    registerGroupInvitationHandler(io, socket, onlineUsers);
 
     //xử lý GET_ONLINE_USERS request - ĐẶT Ở CONNECTION LEVEL
     socket.on("GET_ONLINE_USERS", () => {
@@ -42,8 +51,8 @@ export const registerSocketHandlers = (io: Server) => {
 
         if (!onlineUsers.some((u) => u.userId === userId)) {
           onlineUsers.push({ userId, socketId: socket.id });
-          
-          
+
+
           // Broadcast danh sách online users cho tất cả clients
           io.emit("ONLINE_USERS_LIST", {
             data: onlineUsers.map((u) => u.userId),
@@ -62,7 +71,7 @@ export const registerSocketHandlers = (io: Server) => {
       const index = onlineUsers.findIndex((u) => u.socketId === socket.id);
       if (index !== -1) {
         onlineUsers.splice(index, 1);
-        
+
         // Broadcast updated online users list sau khi user disconnect
         io.emit("ONLINE_USERS_LIST", {
           data: onlineUsers.map((u) => u.userId),

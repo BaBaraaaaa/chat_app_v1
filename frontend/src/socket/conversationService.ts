@@ -32,7 +32,8 @@ class ConversationSocketService {
     if (socketService.isConnected()) {
       socketService.emit('JOIN_CONVERSATION_ROOM', { conversationId });
     } else {
-      console.warn('⚠️ Socket chưa kết nối');}
+      console.warn('⚠️ Socket chưa kết nối');
+    }
   }
 
   /**
@@ -112,14 +113,21 @@ class ConversationSocketService {
    * Listen for conversation member joined
    */
   onMemberJoined(callback: SocketEventCallback<unknown>): void {
-    socketService.on('MEMBER_JOINED_CONVERSATION', callback as (...args: unknown[]) => void);
+    socketService.on('GROUP_MEMBER_JOINED', callback as (...args: unknown[]) => void);
   }
 
   /**
    * Listen for conversation member left
    */
   onMemberLeft(callback: SocketEventCallback<unknown>): void {
-    socketService.on('MEMBER_LEFT_CONVERSATION', callback as (...args: unknown[]) => void);
+    socketService.on('GROUP_MEMBER_LEFT', callback as (...args: unknown[]) => void);
+  }
+
+  /**
+   * Listen for conversation member removed
+   */
+  onMemberRemoved(callback: SocketEventCallback<unknown>): void {
+    socketService.on('GROUP_MEMBER_REMOVED', callback as (...args: unknown[]) => void);
   }
 
   /**
@@ -137,13 +145,14 @@ class ConversationSocketService {
   removeAllListeners(): void {
     const realTimeEvents = [
       'CONVERSATION_UPDATED',
-      'NEW_CONVERSATION_NOTIFICATION', 
+      'NEW_CONVERSATION_NOTIFICATION',
       'CONVERSATION_DELETED_NOTIFICATION',
       'USER_TYPING',
       'USER_STOPPED_TYPING',
       'UNREAD_COUNT_CHANGED',
-      'MEMBER_JOINED_CONVERSATION',
-      'MEMBER_LEFT_CONVERSATION',
+      'GROUP_MEMBER_JOINED',
+      'GROUP_MEMBER_LEFT',
+      'GROUP_MEMBER_REMOVED',
       'CONVERSATION_ERROR'
     ];
 

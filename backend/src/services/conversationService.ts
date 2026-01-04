@@ -535,6 +535,36 @@ export class ConversationService {
 
       await conversation.save();
 
+      // Tạo tin nhắn hệ thống
+      try {
+        const addedUsers = await User.find({ _id: { $in: newIds } });
+        const adminUser = await User.findById(adminId);
+        if (addedUsers.length > 0 && adminUser) {
+          const names = addedUsers.map(u => u.displayName || u.username).join(", ");
+          const systemContent = `${adminUser.displayName || adminUser.username} đã thêm ${names} vào nhóm`;
+
+          await Message.create({
+            conversationId,
+            senderId: new Types.ObjectId("000000000000000000000000"),
+            content: systemContent,
+            type: "system",
+            status: "sent"
+          });
+
+          // Cập nhật lastMessage
+          await Conversation.findByIdAndUpdate(conversationId, {
+            lastMessage: {
+              content: systemContent,
+              senderId: new Types.ObjectId("000000000000000000000000"),
+              sentAt: new Date(),
+              type: "system"
+            }
+          });
+        }
+      } catch (sysErr) {
+        console.error("Lỗi tạo tin nhắn hệ thống khi thêm thành viên:", sysErr);
+      }
+
       const updatedConv = await Conversation.findById(conversationId)
         .populate('participants', 'username displayName avatarUrl firstName lastName email');
 
@@ -582,6 +612,35 @@ export class ConversationService {
       conversation.unreadCount.delete(strIdToRemove);
 
       await conversation.save();
+
+      // Tạo tin nhắn hệ thống
+      try {
+        const removedUser = await User.findById(participantIdToRemove);
+        const adminUser = await User.findById(adminId);
+        if (removedUser && adminUser) {
+          const systemContent = `${adminUser.displayName || adminUser.username} đã xóa ${removedUser.displayName || removedUser.username} khỏi nhóm`;
+
+          await Message.create({
+            conversationId,
+            senderId: new Types.ObjectId("000000000000000000000000"),
+            content: systemContent,
+            type: "system",
+            status: "sent"
+          });
+
+          // Cập nhật lastMessage
+          await Conversation.findByIdAndUpdate(conversationId, {
+            lastMessage: {
+              content: systemContent,
+              senderId: new Types.ObjectId("000000000000000000000000"),
+              sentAt: new Date(),
+              type: "system"
+            }
+          });
+        }
+      } catch (sysErr) {
+        console.error("Lỗi tạo tin nhắn hệ thống khi xóa thành viên:", sysErr);
+      }
 
       const updatedConv = await Conversation.findById(conversationId)
         .populate('participants', 'username displayName avatarUrl firstName lastName email');
@@ -639,9 +698,44 @@ export class ConversationService {
 
       await conversation.save();
 
+      // Tạo tin nhắn hệ thống
+      try {
+        const leavingUser = await User.findById(userId);
+        if (leavingUser) {
+          const systemContent = `${leavingUser.displayName || leavingUser.username} đã rời khỏi nhóm`;
+
+          await Message.create({
+            conversationId,
+            senderId: new Types.ObjectId("000000000000000000000000"),
+            content: systemContent,
+            type: "system",
+            status: "sent"
+          });
+
+          // Cập nhật lastMessage
+          await Conversation.findByIdAndUpdate(conversationId, {
+            lastMessage: {
+              content: systemContent,
+              senderId: new Types.ObjectId("000000000000000000000000"),
+              sentAt: new Date(),
+              type: "system"
+            }
+          });
+        }
+      } catch (sysErr) {
+        console.error("Lỗi tạo tin nhắn hệ thống khi rời cuộc hội thoại:", sysErr);
+      }
+
+      const updatedConv = await Conversation.findById(conversationId)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
       return {
         success: true,
-        message: "Đã rời nhóm thành công"
+        message: "Đã rời nhóm thành công",
+        data: {
+          conversation: updatedConv,
+          userId: strUserId
+        }
       };
 
     } catch (error) {

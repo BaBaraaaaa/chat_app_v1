@@ -7,6 +7,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 import { conversationService } from "@/socket/conversationService"; // Real-time only
 import { conversationApiService } from "@/services/conversationApiService"; // REST API
+import { useAuthStore } from "./useAuthStore";
 import type {
   Conversation,
   ConversationUpdatedResponse,
@@ -426,6 +427,75 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }
     });
 
+
+    // Listen for member joined
+    conversationService.onMemberJoined((data: any) => {
+      if (data.conversation) {
+        get()._updateConversation(data.conversation._id, { participants: data.conversation.participants });
+        toast.info(`${data.newMember?.displayName || data.newMember?.username || 'Thành viên'} đã tham gia nhóm`);
+
+        // Refresh messages if current
+        if (get().currentConversation?._id === data.conversation._id) {
+          // @ts-ignore
+          window.useMessageStore?.getState().getMessagesByCursor(data.conversation._id);
+        }
+      }
+    });
+
+    // Listen for member left
+    conversationService.onMemberLeft((data: any) => {
+      if (data.conversationId) {
+        // Nếu là chính mình rời nhóm (qua device khác chẳng hạn)
+        // @ts-ignore
+        if (data.userId === useAuthStore.getState().user?._id) {
+          get()._removeConversation(data.conversationId);
+          toast.info("Bạn đã rời khỏi nhóm");
+        } else {
+          // Người khác rời nhóm
+          if (data.updatedConversation) {
+            get()._updateConversation(data.conversationId, { participants: data.updatedConversation.participants });
+          }
+          toast.info("Một thành viên đã rời nhóm");
+
+          // Refresh messages if current
+          if (get().currentConversation?._id === data.conversationId) {
+            // @ts-ignore
+            window.useMessageStore?.getState().getMessagesByCursor(data.conversationId);
+          }
+        }
+      }
+    });
+
+    // Listen for member removed
+    conversationService.onMemberRemoved((data: any) => {
+      if (data.conversationId) {
+        // Kiểm tra xem có phải mình bị xóa không
+        const currentUserId = (useAuthStore.getState().user as any)?._id;
+
+        if (data.participantId === currentUserId || !data.participantId) {
+          // Là mình bị xóa (hoặc đây là unicast cho mình)
+          get()._removeConversation(data.conversationId);
+          toast.warning(data.message || "Bạn đã bị xóa khỏi nhóm");
+
+          // Nếu đang mở group đó thì đóng lại
+          if (get().currentConversation?._id === data.conversationId) {
+            set({ currentConversation: null });
+          }
+        } else {
+          // Người khác bị xóa
+          if (data.updatedConversation) {
+            get()._updateConversation(data.conversationId, { participants: data.updatedConversation.participants });
+          }
+          toast.info(data.message || "Một thành viên đã bị xóa khỏi nhóm");
+
+          // Refresh messages if current
+          if (get().currentConversation?._id === data.conversationId) {
+            // @ts-ignore
+            window.useMessageStore?.getState().getMessagesByCursor(data.conversationId);
+          }
+        }
+      }
+    });
 
     set({ _listenersSetup: true });
   },

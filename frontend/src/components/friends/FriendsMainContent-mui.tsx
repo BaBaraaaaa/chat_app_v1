@@ -35,10 +35,14 @@ import { toast } from 'sonner';
 import type { FriendRequest } from '@/types/socket';
 import type { Friend } from '@/types/store';
 
+import GroupInvitationsPanelMui from './GroupInvitationsPanel-mui';
+
 const FriendsMainContentMui = () => {
   const { user } = useAuthStore();
   const { onlineUsers } = useSocketStore();
   const isUserOnline = (userId: string) => onlineUsers.includes(userId);
+
+  const [activeSubView, setActiveSubView] = useState<'friends' | 'group_invitations'>('friends');
 
   const {
     receivedRequests,
@@ -179,7 +183,7 @@ const FriendsMainContentMui = () => {
             <Typography variant="h5" fontWeight={700}>
               Quản lý bạn bè
             </Typography>
-            {onlineFriendsCount > 0 && (
+            {onlineFriendsCount > 0 && activeSubView === 'friends' && (
               <Chip
                 size="small"
                 label={
@@ -206,6 +210,21 @@ const FriendsMainContentMui = () => {
             )}
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              onClick={() => setActiveSubView('friends')}
+              variant={activeSubView === 'friends' ? 'contained' : 'text'}
+              size="small"
+            >
+              Bạn bè
+            </Button>
+            <Button
+              onClick={() => setActiveSubView('group_invitations')}
+              variant={activeSubView === 'group_invitations' ? 'contained' : 'text'}
+              size="small"
+            >
+              Lời mời vào nhóm
+            </Button>
+            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
             <Button
               onClick={handleRefresh}
               variant="outlined"
@@ -238,287 +257,293 @@ const FriendsMainContentMui = () => {
       </Box>
 
       {/* Main Content Area */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Lời mời nhận được */}
-          {receivedRequests.length > 0 && (
-            <Card>
-              <CardHeader
-                avatar={<AccessTime />}
-                title={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography fontWeight={600}>
-                      Lời mời nhận được
-                    </Typography>
-                    <Chip label={receivedRequests.length} size="small" color="primary" />
-                  </Box>
-                }
-              />
-              <Divider />
-              <CardContent>
-                {isLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress />
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    {receivedRequests.map((request: FriendRequest) => (
-                      <Box
-                        key={request._id}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 2,
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 2,
-                          '&:hover': {
-                            bgcolor: 'action.hover',
-                          },
-                          transition: 'background-color 0.2s',
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.light' }}>
-                            {request.fromUserId.displayName?.charAt(0).toUpperCase() ||
-                              request.fromUserId.username?.charAt(0).toUpperCase() || (
-                                <Person />
-                              )}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle1" fontWeight={600}>
-                              {request.fromUserId.displayName || request.fromUserId.username}
-                            </Typography>
-                            {request.message && (
-                              <Typography variant="body2" color="text.secondary">
-                                Lời nhắn:   {request.message}
-                              </Typography>
-                            )}
-                            <Typography variant="caption" color="text.secondary">
-                              {formatTime(request.createdAt)}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="success"
-                            startIcon={<Check />}
-                            onClick={() => handleAcceptRequest(request._id)}
-                          >
-                            Chấp nhận
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            startIcon={<Close />}
-                            onClick={() => handleRejectRequest(request._id)}
-                          >
-                            Từ chối
-                          </Button>
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Lời mời đã gửi */}
-          {sentRequests.length > 0 && (
-            <Card>
-              <CardHeader
-                avatar={<PersonAdd />}
-                title={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography fontWeight={600}>
-                      Lời mời đã gửi
-                    </Typography>
-                    <Chip label={sentRequests.length} size="small" color="secondary" />
-                  </Box>
-                }
-              />
-              <Divider />
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {sentRequests.map((request: FriendRequest) => (
-                    <Box
-                      key={request._id}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        p: 2,
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 2,
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                        transition: 'background-color 0.2s',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.light' }}>
-                          {request.toUserId.displayName?.charAt(0).toUpperCase() || <Person />}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            {request.toUserId.displayName}
-                          </Typography>
-                          {request.message && (
-                            <Typography variant="body2" color="text.secondary">
-                              Lời nhắn:   {request.message}
-                            </Typography>
-                          )}
-                          <Typography variant="caption" color="text.secondary">
-                            Gửi {formatTime(request.createdAt)}
-                          </Typography>
-                        </Box>
-                      </Box>
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        {activeSubView === 'friends' ? (
+          <Box sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Lời mời nhận được */}
+              {receivedRequests.length > 0 && (
+                <Card>
+                  <CardHeader
+                    avatar={<AccessTime />}
+                    title={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          label={request.status === 'pending' ? 'Đang chờ' : request.status}
-                          size="small"
-                          variant="outlined"
-                        />
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="error"
-                          startIcon={<Close />}
-                          onClick={() => handleCancelRequest(request._id)}
-                        >
-                          Hủy
-                        </Button>
+                        <Typography fontWeight={600}>
+                          Lời mời nhận được
+                        </Typography>
+                        <Chip label={receivedRequests.length} size="small" color="primary" />
                       </Box>
-                    </Box>
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
-          )}
+                    }
+                  />
+                  <Divider />
+                  <CardContent>
+                    {isLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {receivedRequests.map((request: FriendRequest) => (
+                          <Box
+                            key={request._id}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              p: 2,
+                              border: 1,
+                              borderColor: 'divider',
+                              borderRadius: 2,
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                              },
+                              transition: 'background-color 0.2s',
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.light' }}>
+                                {request.fromUserId.displayName?.charAt(0).toUpperCase() ||
+                                  request.fromUserId.username?.charAt(0).toUpperCase() || (
+                                    <Person />
+                                  )}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                  {request.fromUserId.displayName || request.fromUserId.username}
+                                </Typography>
+                                {request.message && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    Lời nhắn:   {request.message}
+                                  </Typography>
+                                )}
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatTime(request.createdAt)}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                startIcon={<Check />}
+                                onClick={() => handleAcceptRequest(request._id)}
+                              >
+                                Chấp nhận
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                startIcon={<Close />}
+                                onClick={() => handleRejectRequest(request._id)}
+                              >
+                                Từ chối
+                              </Button>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-          {/* Danh sách bạn bè */}
-          {friends.length > 0 && (
-            <Card>
-              <CardHeader
-                avatar={<Person />}
-                title={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography fontWeight={600}>
-                      Danh sách bạn bè
-                    </Typography>
-                    <Chip label={friends.length} size="small" color="secondary" />
-                  </Box>
-                }
-              />
-              <Divider />
-              <CardContent>
-                <Grid container spacing={1.5}>
-                  {friends.map((friend: Friend) => (
-                    <Grid sx={{ xs: 12, md: 6, lg: 4 }} key={friend._id}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 2,
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 2,
-                          '&:hover': {
-                            bgcolor: 'action.hover',
-                          },
-                          transition: 'background-color 0.2s',
-                        }}
-                      >
+              {/* Lời mời đã gửi */}
+              {sentRequests.length > 0 && (
+                <Card>
+                  <CardHeader
+                    avatar={<PersonAdd />}
+                    title={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography fontWeight={600}>
+                          Lời mời đã gửi
+                        </Typography>
+                        <Chip label={sentRequests.length} size="small" color="secondary" />
+                      </Box>
+                    }
+                  />
+                  <Divider />
+                  <CardContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {sentRequests.map((request: FriendRequest) => (
                         <Box
+                          key={request._id}
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 1.5,
-                            flex: 1,
-                            minWidth: 0,
+                            justifyContent: 'space-between',
+                            p: 2,
+                            border: 1,
+                            borderColor: 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              bgcolor: 'action.hover',
+                            },
+                            transition: 'background-color 0.2s',
                           }}
                         >
-                          <Avatar src={friend.avatarUrl} sx={{ width: 40, height: 40, bgcolor: 'primary.light' }}>
-                            {!friend.avatarUrl && <Person />}
-                          </Avatar>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography
-                              variant="body2"
-                              fontWeight={600}
-                              noWrap
-                              sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.light' }}>
+                              {request.toUserId.displayName?.charAt(0).toUpperCase() || <Person />}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {request.toUserId.displayName}
+                              </Typography>
+                              {request.message && (
+                                <Typography variant="body2" color="text.secondary">
+                                  Lời nhắn:   {request.message}
+                                </Typography>
+                              )}
+                              <Typography variant="caption" color="text.secondary">
+                                Gửi {formatTime(request.createdAt)}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label={request.status === 'pending' ? 'Đang chờ' : request.status}
+                              size="small"
+                              variant="outlined"
+                            />
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              startIcon={<Close />}
+                              onClick={() => handleCancelRequest(request._id)}
                             >
-                              {friend.displayName}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              noWrap
-                              sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-                            >
-                              {friend.email}
-                            </Typography>
+                              Hủy
+                            </Button>
                           </Box>
                         </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveFriend(friend._id, friend.displayName)}
-                          sx={{
-                            color: 'error.main',
-                            '&:hover': {
-                              bgcolor: 'error.light',
-                              color: 'error.contrastText',
-                            },
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          )}
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
 
-          {/* Empty state */}
-          {receivedRequests.length === 0 && sentRequests.length === 0 && friends.length === 0 && (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                py: 16,
-                textAlign: 'center',
-              }}
-            >
-              <Groups sx={{ fontSize: 96, color: 'text.disabled', mb: 2 }} />
-              <Typography variant="h5" fontWeight={600} gutterBottom>
-                Chưa có bạn bè nào
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500 }}>
-                Bắt đầu kết nối với mọi người bằng cách gửi lời mời kết bạn. Nhấn nút "Thêm bạn"
-                để bắt đầu!
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<PersonAdd />}
-                onClick={() => setIsAddDialogOpen(true)}
-              >
-                Thêm bạn bè đầu tiên
-              </Button>
+              {/* Danh sách bạn bè */}
+              {friends.length > 0 && (
+                <Card>
+                  <CardHeader
+                    avatar={<Person />}
+                    title={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography fontWeight={600}>
+                          Danh sách bạn bè
+                        </Typography>
+                        <Chip label={friends.length} size="small" color="secondary" />
+                      </Box>
+                    }
+                  />
+                  <Divider />
+                  <CardContent>
+                    <Grid container spacing={1.5}>
+                      {friends.map((friend: Friend) => (
+                        <Grid sx={{ xs: 12, md: 6, lg: 4 }} key={friend._id}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              p: 2,
+                              border: 1,
+                              borderColor: 'divider',
+                              borderRadius: 2,
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                              },
+                              transition: 'background-color 0.2s',
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                            >
+                              <Avatar src={friend.avatarUrl} sx={{ width: 40, height: 40, bgcolor: 'primary.light' }}>
+                                {!friend.avatarUrl && <Person />}
+                              </Avatar>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                  noWrap
+                                  sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                >
+                                  {friend.displayName}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  noWrap
+                                  sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                >
+                                  {friend.email}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveFriend(friend._id, friend.displayName)}
+                              sx={{
+                                color: 'error.main',
+                                '&:hover': {
+                                  bgcolor: 'error.light',
+                                  color: 'error.contrastText',
+                                },
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Empty state */}
+              {receivedRequests.length === 0 && sentRequests.length === 0 && friends.length === 0 && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    py: 16,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Groups sx={{ fontSize: 96, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="h5" fontWeight={600} gutterBottom>
+                    Chưa có bạn bè nào
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500 }}>
+                    Bắt đầu kết nối với mọi người bằng cách gửi lời mời kết bạn. Nhấn nút "Thêm bạn"
+                    để bắt đầu!
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<PersonAdd />}
+                    onClick={() => setIsAddDialogOpen(true)}
+                  >
+                    Thêm bạn bè đầu tiên
+                  </Button>
+                </Box>
+              )}
             </Box>
-          )}
-        </Box>
+          </Box>
+        ) : (
+          <GroupInvitationsPanelMui />
+        )}
       </Box>
 
       {/* Dialog thêm bạn */}
