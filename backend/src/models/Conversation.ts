@@ -8,6 +8,9 @@ export enum ConversationType {
 export interface IConversation extends Document {
   type: ConversationType;
   participants: Types.ObjectId[]; // Danh sách user IDs
+  adminId?: Types.ObjectId; // Admin của group
+  name?: string; // Tên nhóm
+  avatarUrl?: string; // Avatar nhóm
   lastMessage?: {
     content: string;
     senderId: Types.ObjectId;
@@ -35,6 +38,9 @@ const ConversationSchema = new Schema<IConversation>(
         required: true
       }
     ],
+    adminId: { type: Schema.Types.ObjectId, ref: "User" }, // Admin của group
+    name: { type: String }, // Tên nhóm
+    avatarUrl: { type: String }, // Avatar nhóm
     lastMessage: {
       content: { type: String },
       senderId: { type: Schema.Types.ObjectId, ref: "User" },
@@ -61,7 +67,7 @@ ConversationSchema.index({ participants: 1 });
 ConversationSchema.index({ "lastMessage.sentAt": -1 });
 
 // Method để tìm hoặc tạo conversation giữa 2 users
-ConversationSchema.statics.findOrCreateDirectConversation = async function(
+ConversationSchema.statics.findOrCreateDirectConversation = async function (
   userId1: Types.ObjectId,
   userId2: Types.ObjectId
 ) {

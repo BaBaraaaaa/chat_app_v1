@@ -32,7 +32,7 @@ const ChatPanel = () => {
     _updateConversation,
     resetUnreadCount,
   } = useConversationStore();
-  const { messages, sendMessage, getMessages, joinConversation, getMessagesByCursor, cursor, hasMore, loading } =
+  const { messages, sendMessage, joinConversation, getMessagesByCursor, cursor, hasMore, loading } =
     useMessageStore();
 
   // ✅ Load conversations và friends khi connected
@@ -68,7 +68,6 @@ const ChatPanel = () => {
     selectedConversation?._id,
     isConnected,
     joinConversation,
-    getMessages,
     getMessagesByCursor,
     _updateConversation,
   ]);
@@ -136,21 +135,28 @@ const ChatPanel = () => {
 
   const handleSendMessage = (content: string) => {
     if (content.trim() && selectedConversation) {
-      // Tìm receiverId (người nhận là participant khác không phải user)
-      const receiver = selectedConversation.participants.find(
-        (p) => p._id !== user?._id
-      );
-      if (!receiver) {
-        console.error("❌ No receiver found in conversation");
-        return;
+      let receiverId: string | undefined;
+
+      // Nếu là Direct Chat (2 người) -> tìm receiver
+      // Nếu là Group Chat -> receiverId = undefined
+      const isGroup = selectedConversation.participants.length > 2 || selectedConversation.adminId;
+
+      if (!isGroup) {
+        const receiver = selectedConversation.participants.find(
+          (p) => p._id !== user?._id
+        );
+        if (receiver) {
+          receiverId = receiver._id;
+        }
       }
 
       const payload = {
         conversationId: selectedConversation._id,
-        receiverId: receiver._id,
+        receiverId: receiverId, // Có thể undefined nếu là group
         content: content,
         type: "text" as const,
       };
+      // @ts-ignore - Ignore type error for now if receiverId is required in type
       sendMessage(payload);
     } else {
       return;
@@ -170,6 +176,10 @@ const ChatPanel = () => {
     if (!selectedConversation || !user) {
       return true;
     }
+
+    // Group chat luôn cho phép chat
+    const isGroup = selectedConversation.participants.length > 2 || selectedConversation.adminId;
+    if (isGroup) return true;
 
     // Tìm người còn lại trong conversation
     const otherUser = selectedConversation.participants.find(
@@ -219,6 +229,23 @@ const ChatPanel = () => {
   const selectedContact = useMemo((): Contact | null => {
     if (!selectedConversation) return null;
 
+    const isGroup = selectedConversation.participants.length > 2 || selectedConversation.adminId;
+
+    if (isGroup) {
+      return {
+        id: selectedConversation._id,
+        name: selectedConversation.name || "Nhóm chưa đặt tên",
+        avatarUrl: selectedConversation.avatarUrl,
+        lastMessage: selectedConversation.lastMessage?.content || "Bắt đầu cuộc trò chuyện",
+        timestamp: selectedConversation.lastMessage
+          ? new Date(selectedConversation.lastMessage.sentAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+          : "",
+        isOnline: false, // Group doesn't have online status usually
+        unreadCount: selectedConversation.unreadCount || 0,
+        type: 'group'
+      };
+    }
+
     const otherUser = selectedConversation.participants.find(
       (p) => p._id !== user?._id
     );
@@ -243,6 +270,7 @@ const ChatPanel = () => {
         : "",
       isOnline,
       unreadCount: selectedConversation.unreadCount || 0,
+      type: 'direct'
     };
   }, [selectedConversation, user, onlineUsers]);
 

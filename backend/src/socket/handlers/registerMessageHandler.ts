@@ -24,7 +24,7 @@ export const registerMessageHandler = (
   // 📨 Gửi tin nhắn
   socket.on("SEND_MESSAGE", async (data: {
     conversationId: string;
-    receiverId: string;
+    receiverId?: string; // Optional cho group chat
     content: string;
     type?: MessageType;
     attachments?: any[];
@@ -42,22 +42,25 @@ export const registerMessageHandler = (
 
       const { conversationId, receiverId, content, type, attachments, replyTo } = data;
 
-      // ✅ Validate: Chỉ cho phép nhắn tin giữa bạn bè
-      try {
-        await FriendshipValidator.validateFriendship(senderId, receiverId);
-      } catch (error: any) {
-        socket.emit("MESSAGE_ERROR", {
-          success: false,
-          message: error.message || "Bạn chỉ có thể nhắn tin với người trong danh sách bạn bè"
-        });
-        return;
+      // ✅ Validate: Chỉ cho phép nhắn tin giữa bạn bè (CHỈ với Direct Chat)
+      // Group chat không cần validate vì receiverId = undefined
+      if (receiverId) {
+        try {
+          await FriendshipValidator.validateFriendship(senderId, receiverId);
+        } catch (error: any) {
+          socket.emit("MESSAGE_ERROR", {
+            success: false,
+            message: error.message || "Bạn chỉ có thể nhắn tin với người trong danh sách bạn bè"
+          });
+          return;
+        }
       }
 
       // Gửi tin nhắn qua controller
       const result = await messageController.sendMessage({
         conversationId: new Types.ObjectId(conversationId),
         senderId: new Types.ObjectId(senderId),
-        receiverId: new Types.ObjectId(receiverId),
+        ...(receiverId && { receiverId: new Types.ObjectId(receiverId) }), // Only include if defined
         content,
         ...(type && { type }),
         ...(attachments && { attachments }),

@@ -127,6 +127,9 @@ export interface Conversation {
   type: ConversationType;
   participants: ConversationParticipant[];
   lastMessage?: ConversationLastMessage;
+  name?: string;
+  adminId?: string;
+  avatarUrl?: string;
   unreadCount: number;
   isActive: boolean;
   createdAt: string;
@@ -138,7 +141,7 @@ export interface Conversation {
 // Send Message
 export interface SendMessagePayload {
   conversationId: string;
-  receiverId: string;
+  receiverId?: string; // Optional cho group chat
   content: string;
   type?: MessageType;
   attachments?: MessageAttachment[];

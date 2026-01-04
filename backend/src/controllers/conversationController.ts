@@ -6,6 +6,117 @@ import { Types } from "mongoose";
  */
 export class ConversationController {
   /**
+   * Tạo group conversation
+   */
+  async createGroup(
+    adminId: Types.ObjectId | string,
+    participantIds: (Types.ObjectId | string)[],
+    name: string,
+    avatarUrl?: string
+  ) {
+    try {
+      const adminObjectId = typeof adminId === 'string'
+        ? new Types.ObjectId(adminId)
+        : adminId;
+
+      const participantObjectIds = participantIds.map(id =>
+        typeof id === 'string' ? new Types.ObjectId(id) : id
+      );
+
+      return await ConversationService.createGroupConversation(
+        adminObjectId,
+        participantObjectIds,
+        name,
+        avatarUrl
+      );
+    } catch (error) {
+      console.error("Lỗi trong ConversationController.createGroup:", error);
+      return {
+        success: false,
+        message: "Lỗi tạo nhóm",
+        error
+      };
+    }
+  }
+
+  /**
+   * Thêm thành viên
+   */
+  async addParticipants(
+    conversationId: Types.ObjectId | string,
+    adminId: Types.ObjectId | string,
+    participantIds: (Types.ObjectId | string)[]
+  ) {
+    try {
+      const convId = typeof conversationId === 'string' ? new Types.ObjectId(conversationId) : conversationId;
+      const adminObjId = typeof adminId === 'string' ? new Types.ObjectId(adminId) : adminId;
+      const pIds = participantIds.map(id => typeof id === 'string' ? new Types.ObjectId(id) : id);
+
+      return await ConversationService.addParticipants(convId, adminObjId, pIds);
+    } catch (error) {
+      console.error("Lỗi trong ConversationController.addParticipants:", error);
+      return { success: false, message: "Lỗi thêm thành viên", error };
+    }
+  }
+
+  /**
+   * Xóa thành viên
+   */
+  async removeParticipant(
+    conversationId: Types.ObjectId | string,
+    adminId: Types.ObjectId | string,
+    participantIdToRemove: Types.ObjectId | string
+  ) {
+    try {
+      const convId = typeof conversationId === 'string' ? new Types.ObjectId(conversationId) : conversationId;
+      const adminObjId = typeof adminId === 'string' ? new Types.ObjectId(adminId) : adminId;
+      const rmId = typeof participantIdToRemove === 'string' ? new Types.ObjectId(participantIdToRemove) : participantIdToRemove;
+
+      return await ConversationService.removeParticipant(convId, adminObjId, rmId);
+    } catch (error) {
+      console.error("Lỗi trong ConversationController.removeParticipant:", error);
+      return { success: false, message: "Lỗi xóa thành viên", error };
+    }
+  }
+
+  /**
+   * Cập nhật avatar nhóm
+   */
+  async updateGroupAvatar(
+    conversationId: Types.ObjectId | string,
+    adminId: Types.ObjectId | string,
+    avatarUrl: string
+  ) {
+    try {
+      const convId = typeof conversationId === 'string' ? new Types.ObjectId(conversationId) : conversationId;
+      const adminObjId = typeof adminId === 'string' ? new Types.ObjectId(adminId) : adminId;
+
+      return await ConversationService.updateGroupAvatar(convId, adminObjId, avatarUrl);
+    } catch (error) {
+      console.error("Lỗi trong ConversationController.updateGroupAvatar:", error);
+      return { success: false, message: "Lỗi cập nhật avatar nhóm", error };
+    }
+  }
+
+  /**
+   * Rời nhóm
+   */
+  async leaveConversation(
+    conversationId: Types.ObjectId | string,
+    userId: Types.ObjectId | string
+  ) {
+    try {
+      const convId = typeof conversationId === 'string' ? new Types.ObjectId(conversationId) : conversationId;
+      const uId = typeof userId === 'string' ? new Types.ObjectId(userId) : userId;
+
+      return await ConversationService.leaveConversation(convId, uId);
+    } catch (error) {
+      console.error("Lỗi trong ConversationController.leaveConversation:", error);
+      return { success: false, message: "Lỗi rời nhóm", error };
+    }
+  }
+
+  /**
    * Tạo hoặc lấy conversation giữa 2 users
    */
   async getOrCreateDirectConversation(
@@ -13,12 +124,12 @@ export class ConversationController {
     userId2: Types.ObjectId | string
   ) {
     try {
-      const user1Id = typeof userId1 === 'string' 
-        ? new Types.ObjectId(userId1) 
+      const user1Id = typeof userId1 === 'string'
+        ? new Types.ObjectId(userId1)
         : userId1;
-      
-      const user2Id = typeof userId2 === 'string' 
-        ? new Types.ObjectId(userId2) 
+
+      const user2Id = typeof userId2 === 'string'
+        ? new Types.ObjectId(userId2)
         : userId2;
 
       return await ConversationService.getOrCreateDirectConversation(user1Id, user2Id);
@@ -37,8 +148,8 @@ export class ConversationController {
    */
   async getUserConversations(userId: Types.ObjectId | string) {
     try {
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await ConversationService.getUserConversations(userObjectId);
@@ -60,12 +171,12 @@ export class ConversationController {
     userId: Types.ObjectId | string
   ) {
     try {
-      const convId = typeof conversationId === 'string' 
-        ? new Types.ObjectId(conversationId) 
+      const convId = typeof conversationId === 'string'
+        ? new Types.ObjectId(conversationId)
         : conversationId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await ConversationService.getConversationById(convId, userObjectId);
@@ -87,12 +198,12 @@ export class ConversationController {
     userId: Types.ObjectId | string
   ) {
     try {
-      const convId = typeof conversationId === 'string' 
-        ? new Types.ObjectId(conversationId) 
+      const convId = typeof conversationId === 'string'
+        ? new Types.ObjectId(conversationId)
         : conversationId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await ConversationService.deleteConversation(convId, userObjectId);
@@ -114,8 +225,8 @@ export class ConversationController {
     searchQuery: string
   ) {
     try {
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await ConversationService.searchConversations(userObjectId, searchQuery);
@@ -134,8 +245,8 @@ export class ConversationController {
    */
   async getTotalUnreadCount(userId: Types.ObjectId | string) {
     try {
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await ConversationService.getTotalUnreadCount(userObjectId);
@@ -157,12 +268,12 @@ export class ConversationController {
     userId: Types.ObjectId | string
   ) {
     try {
-      const convId = typeof conversationId === 'string' 
-        ? new Types.ObjectId(conversationId) 
+      const convId = typeof conversationId === 'string'
+        ? new Types.ObjectId(conversationId)
         : conversationId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await ConversationService.resetUnreadCount(convId, userObjectId);

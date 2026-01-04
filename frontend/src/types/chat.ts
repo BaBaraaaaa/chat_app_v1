@@ -14,4 +14,5 @@ export interface Contact {
   timestamp: string;
   isOnline: boolean;
   unreadCount?: number;
+  type?: 'direct' | 'group';
 }

@@ -1,5 +1,4 @@
 import type { User } from "./user";
-import type { FriendRequest } from "./socket";
 
 
 export interface AuthState {

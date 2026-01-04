@@ -5,7 +5,7 @@ import { Types } from "mongoose";
 export interface SendMessageParams {
   conversationId: Types.ObjectId;
   senderId: Types.ObjectId;
-  receiverId: Types.ObjectId;
+  receiverId?: Types.ObjectId; // Optional cho group chat
   content: string;
   type?: MessageType;
   attachments?: {
@@ -87,18 +87,31 @@ export class MessageService {
         .populate('replyTo');
 
       // Cập nhật lastMessage trong conversation
-      await Conversation.findByIdAndUpdate(conversationId, {
+      // Cập nhật lastMessage và unreadCount
+      const updateData: any = {
         lastMessage: {
           content: content.trim(),
           senderId,
           sentAt: new Date(),
           type
         },
-        // Tăng unread count cho receiver
-        $inc: {
-          [`unreadCount.${receiverId.toString()}`]: 1
-        }
-      });
+        $inc: {}
+      };
+
+      // Tăng unread count (logic khác nhau cho Group và Direct)
+      // Nếu có receiverId cụ thể (1-1)
+      if (receiverId) {
+        updateData.$inc[`unreadCount.${receiverId.toString()}`] = 1;
+      } else {
+        // Group chat: Tăng cho tất cả participants trừ sender
+        conversation.participants.forEach(p => {
+          if (p.toString() !== senderId.toString()) {
+            updateData.$inc[`unreadCount.${p.toString()}`] = 1;
+          }
+        });
+      }
+
+      await Conversation.findByIdAndUpdate(conversationId, updateData);
 
       return {
         success: true,

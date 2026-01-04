@@ -54,7 +54,7 @@ const MessageSchema = new Schema<IMessage>(
     receiverId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false, // Optional cho group chat
       index: true
     },
     content: {
@@ -117,7 +117,7 @@ MessageSchema.index({ status: 1 });
 MessageSchema.index({ receiverId: 1, status: 1 }); // Query unread messages
 
 // Static method để lấy unread messages
-MessageSchema.statics.getUnreadMessages = async function(
+MessageSchema.statics.getUnreadMessages = async function (
   userId: Types.ObjectId,
   conversationId?: Types.ObjectId
 ) {
@@ -138,7 +138,7 @@ MessageSchema.statics.getUnreadMessages = async function(
 };
 
 // Static method để đếm số lượng unread messages
-MessageSchema.statics.countUnreadMessages = async function(
+MessageSchema.statics.countUnreadMessages = async function (
   userId: Types.ObjectId,
   conversationId?: Types.ObjectId
 ) {

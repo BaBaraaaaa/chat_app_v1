@@ -42,6 +42,8 @@ interface ChatAreaProps {
   hasMore?: boolean;
   loading?: boolean;
 }
+import { GroupSettingsDialogMui } from './GroupSettingsDialog-mui';
+
 
 export default function ChatAreaMui({
   selectedContact,
@@ -58,6 +60,8 @@ export default function ChatAreaMui({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState<string>('');
+  const [groupSettingsOpen, setGroupSettingsOpen] = useState(false); // State for settings dialog
+
   const { editMessage, deleteMessage } = useMessageStore();
   const open = Boolean(anchorEl);
 
@@ -70,6 +74,11 @@ export default function ChatAreaMui({
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleOpenGroupSettings = () => {
+    setGroupSettingsOpen(true);
+    handleMenuClose();
   };
 
   // Handle edit message
@@ -292,6 +301,14 @@ export default function ChatAreaMui({
             </ListItemIcon>
             <ListItemText>Xem hồ sơ</ListItemText>
           </MenuItem>
+          {selectedContact?.type === 'group' && (
+            <MenuItem onClick={handleOpenGroupSettings}>
+              <ListItemIcon>
+                <Group fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Thông tin nhóm</ListItemText>
+            </MenuItem>
+          )}
           <MenuItem onClick={handleSearch}>
             <ListItemIcon>
               <Search fontSize="small" />
@@ -325,6 +342,12 @@ export default function ChatAreaMui({
         editingMessageId={editingMessageId}
         onCancelEdit={handleCancelEdit}
         disabled={!isFriend || !isActive}
+      />
+
+      {/* Group Settings Dialog */}
+      <GroupSettingsDialogMui
+        open={groupSettingsOpen}
+        onOpenChange={setGroupSettingsOpen}
       />
     </Box>
   );

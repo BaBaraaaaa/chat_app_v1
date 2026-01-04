@@ -31,7 +31,7 @@ interface MessageState {
 
     // Actions
     sendMessage: (payload: SendMessagePayload) => void;
-    getMessages: (conversationId: string, limit?: number, skip?: number) => void;
+
     getMessagesByCursor: (conversationId: string, limit?: number, cursor?: string) => void;
     markMessageAsRead: (messageId: string) => void;
     markAllAsRead: (conversationId: string) => void;
@@ -87,35 +87,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         messageService.sendMessage(payload);
     },
 
-    /**
-     * Lấy danh sách tin nhắn áp dụng limit-offset Pagination
-     */
-    getMessages: async (conversationId: string, limit = 50, skip = 0) => {
-        try {
-            set({ loading: true });
-            const response = await messageApiService.getMessages(conversationId, limit, skip);
 
-            if (response.success && response.data) {
-                // Filter out deleted messages
-                const activeMessages = response.data.messages.filter(msg => !msg.isDeleted);
-
-                get()._setMessages(
-                    conversationId,
-                    activeMessages,
-                    response.data.total,
-                    response.data.hasMore,
-                    false // Initial load (limit-offset) typically treats as replace or append? Usually replace for first page.
-                );
-            } else {
-                toast.error("Không thể tải tin nhắn");
-            }
-        } catch (error) {
-            console.error("Failed to load messages:", error);
-            toast.error("Lỗi khi tải tin nhắn");
-        } finally {
-            set({ loading: false });
-        }
-    },
     /**
      * 
      * Lấy danh sách tin nhắn áp dụng cursor Pagination

@@ -84,12 +84,32 @@ function ConversationListMui({
   const displayedConversations = useMemo(() => {
     const baseList = searchQuery ? searchResults : conversations || [];
 
-    return baseList.filter(
-      (conv) =>
-        conv.lastMessage || // Có tin nhắn
-        (currentConversation && conv._id === currentConversation._id) // Hoặc đang được chọn
-    );
-  }, [searchQuery, searchResults, conversations, currentConversation]);
+    return baseList.filter((conv) => {
+      // 1. Filter by Tab (0: Personal, 1: Group)
+      const isGroup = conv.type === 'group';
+      if (tabValue === 0 && isGroup) return false;
+      if (tabValue === 1 && !isGroup) return false;
+
+      // 2. Determine if it should be shown
+      // Show if:
+      // - Has lastMessage (active conversation)
+      // - OR is currently selected (user clicked on it)
+      // - OR is a Group (groups should show up even if empty initially, typically)
+      // - OR matches search query (already filtered by baseList logic mostly, but good to keep in mind)
+
+      const hasMessage = !!conv.lastMessage;
+      const isSelected = currentConversation && conv._id === currentConversation._id;
+
+      // Special logic: If it's a group, we might want to show it even without messages
+      // For personal (direct), usually we show only if it has message OR is selected
+
+      if (isGroup) {
+        return true; // Show all groups for now
+      }
+
+      return hasMessage || isSelected;
+    });
+  }, [searchQuery, searchResults, conversations, currentConversation, tabValue]);
 
   // Memoize callback functions
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -235,20 +255,20 @@ function ConversationListMui({
           </Box>
         ) : displayedConversations.length === 0 ? (
           <Box
-            sx={{ 
-              textAlign: "center", 
-              py: { xs: 4, sm: 8 }, 
-              px: 2, 
-              color: "text.secondary" 
+            sx={{
+              textAlign: "center",
+              py: { xs: 4, sm: 8 },
+              px: 2,
+              color: "text.secondary"
             }}
           >
-            <AddComment sx={{ 
-              fontSize: { xs: 32, sm: 48 }, 
-              opacity: 0.5, 
-              mb: { xs: 1, sm: 2 } 
+            <AddComment sx={{
+              fontSize: { xs: 32, sm: 48 },
+              opacity: 0.5,
+              mb: { xs: 1, sm: 2 }
             }} />
-            <Typography 
-              variant={ isSmallScreen ? "body2" : "body1" }
+            <Typography
+              variant={isSmallScreen ? "body2" : "body1"}
             >
               {searchQuery
                 ? "Không tìm thấy cuộc hội thoại"
@@ -258,14 +278,22 @@ function ConversationListMui({
         ) : (
           <List sx={{ p: 0 }}>
             {displayedConversations.map((conversation) => {
-              const otherUser = getOtherParticipant(conversation);
+              const isGroup = conversation.type === 'group';
+              const otherUser = isGroup ? null : getOtherParticipant(conversation);
+
+              // For group, we don't need otherUser check, but for direct we do
+              if (!isGroup && !otherUser) return null;
+
               const isActive = currentConversation?._id === conversation._id;
               const hasUnread = conversation.unreadCount > 0;
-              const isOnline = otherUser
-                ? onlineUsers.includes(otherUser._id)
-                : false;
 
-              if (!otherUser) return null;
+              // Display Info
+              const displayName = isGroup ? conversation.name : (otherUser?.displayName || otherUser?.username);
+              const avatarUrl = isGroup ? conversation.avatarUrl : otherUser?.avatarUrl;
+              const isOnline = !isGroup && otherUser ? onlineUsers.includes(otherUser._id) : false;
+
+              // Default avatar letter
+              const avatarLetter = (displayName || "?").charAt(0).toUpperCase();
 
               return (
                 <ListItemButton
@@ -289,16 +317,14 @@ function ConversationListMui({
                   <ListItemAvatar>
                     <Box sx={{ position: "relative" }}>
                       <Avatar
-                        src={otherUser.avatarUrl}
-                        alt={otherUser.displayName}
-                        sx={{ 
-                          width: { xs: 40, sm: 44 }, 
-                          height: { xs: 40, sm: 44 } 
+                        src={avatarUrl}
+                        alt={displayName}
+                        sx={{
+                          width: { xs: 40, sm: 44 },
+                          height: { xs: 40, sm: 44 }
                         }}
                       >
-                        {(otherUser.displayName || otherUser.username)
-                          .charAt(0)
-                          .toUpperCase()}
+                        {isGroup ? <Group fontSize="small" /> : avatarLetter}
                       </Avatar>
                       {isOnline && (
                         <Box
@@ -342,7 +368,7 @@ function ConversationListMui({
                             flex: 1,
                           }}
                         >
-                          {otherUser.displayName || otherUser.username}
+                          {displayName}
                         </Typography>
                         {conversation.lastMessage && (
                           <Typography

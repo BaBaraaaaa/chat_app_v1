@@ -41,7 +41,7 @@ interface SimpleResponse {
 }
 
 export const conversationApiService = {
-  
+
   // ==================== CRUD OPERATIONS ====================
 
   /**
@@ -50,8 +50,21 @@ export const conversationApiService = {
    */
   getOrCreateConversation: async (otherUserId: string): Promise<ConversationResponse> => {
     const res = await api.post(
-      "/conversations", 
-      { otherUserId }, 
+      "/conversations",
+      { otherUserId },
+      { withCredentials: true }
+    );
+    return res.data;
+  },
+
+  /**
+   * Tạo cuộc hội thoại nhóm
+   * Backend endpoint: POST /api/conversations/group
+   */
+  createGroup: async (name: string, participantIds: string[], avatarUrl?: string): Promise<ConversationResponse> => {
+    const res = await api.post(
+      "/conversations/group",
+      { name, participantIds, avatarUrl },
       { withCredentials: true }
     );
     return res.data;
@@ -63,7 +76,7 @@ export const conversationApiService = {
    */
   getConversations: async (): Promise<ConversationsListResponse> => {
     const res = await api.get(
-      `/conversations`, 
+      `/conversations`,
       { withCredentials: true }
     );
     return res.data;
@@ -75,7 +88,7 @@ export const conversationApiService = {
    */
   getConversationDetail: async (conversationId: string): Promise<ConversationResponse> => {
     const res = await api.get(
-      `/conversations/${conversationId}`, 
+      `/conversations/${conversationId}`,
       { withCredentials: true }
     );
     return res.data;
@@ -87,7 +100,7 @@ export const conversationApiService = {
    */
   searchConversations: async (query: string): Promise<SearchConversationsResponse> => {
     const res = await api.get(
-      `/conversations/search?q=${encodeURIComponent(query)}`, 
+      `/conversations/search?q=${encodeURIComponent(query)}`,
       { withCredentials: true }
     );
     return res.data;
@@ -99,7 +112,7 @@ export const conversationApiService = {
    */
   deleteConversation: async (conversationId: string): Promise<SimpleResponse> => {
     const res = await api.delete(
-      `/conversations/${conversationId}`, 
+      `/conversations/${conversationId}`,
       { withCredentials: true }
     );
     return res.data;
@@ -111,7 +124,7 @@ export const conversationApiService = {
    */
   getTotalUnreadCount: async (): Promise<UnreadCountResponse> => {
     const res = await api.get(
-      "/conversations/unread-count", 
+      "/conversations/unread-count",
       { withCredentials: true }
     );
     return res.data;
@@ -123,9 +136,70 @@ export const conversationApiService = {
    */
   resetUnreadCount: async (conversationId: string): Promise<SimpleResponse> => {
     const res = await api.post(
-      `/conversations/${conversationId}/read`, 
-      {}, 
+      `/conversations/${conversationId}/read`,
+      {},
       { withCredentials: true }
+    );
+    return res.data;
+  },
+
+  /**
+   * Thêm thành viên vào nhóm
+   * Backend endpoint: PUT /api/conversations/:id/participants
+   */
+  addParticipants: async (conversationId: string, participantIds: string[]): Promise<ConversationResponse> => {
+    const res = await api.put(
+      `/conversations/${conversationId}/participants`,
+      { participantIds },
+      { withCredentials: true }
+    );
+    return res.data;
+  },
+
+  /**
+   * Xóa thành viên khỏi nhóm
+   * Backend endpoint: DELETE /api/conversations/:id/participants
+   */
+  removeParticipant: async (conversationId: string, participantId: string): Promise<ConversationResponse> => {
+    const res = await api.delete(
+      `/conversations/${conversationId}/participants`,
+      {
+        data: { participantId },
+        withCredentials: true
+      }
+    );
+    return res.data;
+  },
+
+  /**
+   * Rời nhóm
+   * Backend endpoint: POST /api/conversations/:id/leave
+   */
+  leaveGroup: async (conversationId: string): Promise<SimpleResponse> => {
+    const res = await api.post(
+      `/conversations/${conversationId}/leave`, {},
+      { withCredentials: true }
+    );
+    return res.data;
+  },
+
+  /**
+   * Cập nhật avatar nhóm
+   * Backend endpoint: POST /api/conversations/:id/avatar
+   */
+  updateGroupAvatar: async (conversationId: string, file: File): Promise<ConversationResponse> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const res = await api.post(
+      `/conversations/${conversationId}/avatar`,
+      formData,
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
     );
     return res.data;
   }

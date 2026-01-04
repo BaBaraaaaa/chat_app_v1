@@ -23,12 +23,17 @@ interface ConversationState {
 
   // Actions
   getOrCreateConversation: (otherUserId: string) => Promise<void>;
+  createGroup: (name: string, participantIds: string[], avatarUrl?: string) => Promise<string | null>;
   getConversations: () => Promise<void>;
   getConversationDetail: (conversationId: string) => Promise<void>;
   searchConversations: (query: string) => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
   getTotalUnreadCount: () => Promise<void>;
   resetUnreadCount: (conversationId: string) => Promise<void>;
+  addParticipants: (conversationId: string, participantIds: string[]) => Promise<void>;
+  removeParticipant: (conversationId: string, participantId: string) => Promise<void>;
+  leaveGroup: (conversationId: string) => Promise<void>;
+  updateGroupAvatar: (conversationId: string, file: File) => Promise<void>;
   setCurrentConversation: (conversation: Conversation | null) => void;
   clearSearchResults: () => void;
 
@@ -89,6 +94,42 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     } catch (error) {
       console.error("Failed to create/get conversation:", error);
       toast.error("Lỗi khi tạo cuộc hội thoại");
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  /**
+   * Tạo cuộc hội thoại nhóm (REST API)
+   */
+  createGroup: async (name: string, participantIds: string[], avatarUrl?: string) => {
+    try {
+      set({ loading: true });
+      const response = await conversationApiService.createGroup(name, participantIds, avatarUrl);
+
+      if (response.success && response.data) {
+        const conversation = response.data;
+
+        // Add to conversations list
+        const state = get();
+        set({
+          conversations: [conversation, ...state.conversations],
+          currentConversation: conversation
+        });
+
+        // Join room for real-time updates
+        conversationService.joinConversationRoom(conversation._id);
+
+        toast.success("Tạo nhóm thành công");
+        return conversation._id;
+      } else {
+        toast.error("Không thể tạo nhóm");
+        return null;
+      }
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      toast.error("Lỗi khi tạo nhóm");
+      return null;
     } finally {
       set({ loading: false });
     }
@@ -232,6 +273,87 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       // Revert optimistic update
       await get().getConversationDetail(conversationId);
       toast.error("Lỗi khi đánh dấu đã đọc");
+    }
+  },
+
+  /**
+   * Thêm thành viên vào nhóm
+   */
+  addParticipants: async (conversationId: string, participantIds: string[]) => {
+    try {
+      const response = await conversationApiService.addParticipants(conversationId, participantIds);
+      if (response.success && response.data) {
+        toast.success("Đã thêm thành viên");
+        // Update local state is optional since real-time update might handle it, 
+        // but explicit update is faster for the admin
+        get()._updateConversation(conversationId, { participants: response.data.participants });
+      } else {
+        toast.error(response.message || "Không thể thêm thành viên");
+      }
+    } catch (error) {
+      console.error("Lỗi khi thêm thành viên:", error);
+      toast.error("Lỗi khi thêm thành viên");
+    }
+  },
+
+  /**
+   * Xóa thành viên khỏi nhóm
+   */
+  removeParticipant: async (conversationId: string, participantId: string) => {
+    try {
+      const response = await conversationApiService.removeParticipant(conversationId, participantId);
+      if (response.success && response.data) {
+        toast.success("Đã xóa thành viên");
+        get()._updateConversation(conversationId, { participants: response.data.participants });
+      } else {
+        toast.error(response.message || "Không thể xóa thành viên");
+      }
+    } catch (error) {
+      console.error("Lỗi khi xóa thành viên:", error);
+      toast.error("Lỗi khi xóa thành viên");
+    }
+  },
+
+  /**
+   * Rời nhóm
+   */
+  leaveGroup: async (conversationId: string) => {
+    try {
+      const response = await conversationApiService.leaveGroup(conversationId);
+      if (response.success) {
+        toast.success("Đã rời nhóm");
+        get()._removeConversation(conversationId);
+        conversationService.leaveConversationRoom(conversationId);
+      } else {
+        toast.error(response.message || "Không thể rời nhóm");
+      }
+    } catch (error) {
+      console.error("Lỗi khi rời nhóm:", error);
+      toast.error("Lỗi khi rời nhóm");
+    }
+  },
+
+  /**
+   * Cập nhật avatar nhóm
+   */
+  updateGroupAvatar: async (conversationId: string, file: File) => {
+    try {
+      const response = await conversationApiService.updateGroupAvatar(conversationId, file);
+      if (response.success && response.data) {
+        toast.success("Đã cập nhật avatar nhóm");
+        get()._updateConversation(conversationId, { avatarUrl: response.data.avatarUrl });
+
+        // Also update currentConversation if it matches
+        const state = get();
+        if (state.currentConversation?._id === conversationId) {
+          set({ currentConversation: { ...state.currentConversation, avatarUrl: response.data.avatarUrl } });
+        }
+      } else {
+        toast.error(response.message || "Không thể cập nhật avatar");
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật avatar nhóm:", error);
+      toast.error("Lỗi khi cập nhật avatar nhóm");
     }
   },
 

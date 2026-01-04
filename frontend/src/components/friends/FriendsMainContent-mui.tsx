@@ -32,6 +32,8 @@ import { useFriendStore } from '@/stores/useFriendStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocketStore } from '@/stores/useSocketStore';
 import { toast } from 'sonner';
+import type { FriendRequest } from '@/types/socket';
+import type { Friend } from '@/types/store';
 
 const FriendsMainContentMui = () => {
   const { user } = useAuthStore();
@@ -60,7 +62,7 @@ const FriendsMainContentMui = () => {
 
   // Tính số bạn bè đang online
   const onlineFriendsCount = useMemo(
-    () => friends.filter((friend) => isUserOnline(friend._id)).length,
+    () => friends.filter((friend: Friend) => isUserOnline(friend._id)).length,
     [friends, onlineUsers]
   );
 
@@ -245,7 +247,7 @@ const FriendsMainContentMui = () => {
                 avatar={<AccessTime />}
                 title={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography fontWeight={600}>
                       Lời mời nhận được
                     </Typography>
                     <Chip label={receivedRequests.length} size="small" color="primary" />
@@ -260,7 +262,7 @@ const FriendsMainContentMui = () => {
                   </Box>
                 ) : (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    {receivedRequests.map((request) => (
+                    {receivedRequests.map((request: FriendRequest) => (
                       <Box
                         key={request._id}
                         sx={{
@@ -290,7 +292,7 @@ const FriendsMainContentMui = () => {
                             </Typography>
                             {request.message && (
                               <Typography variant="body2" color="text.secondary">
-                              Lời nhắn:   {request.message}
+                                Lời nhắn:   {request.message}
                               </Typography>
                             )}
                             <Typography variant="caption" color="text.secondary">
@@ -333,7 +335,7 @@ const FriendsMainContentMui = () => {
                 avatar={<PersonAdd />}
                 title={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography fontWeight={600}>
                       Lời mời đã gửi
                     </Typography>
                     <Chip label={sentRequests.length} size="small" color="secondary" />
@@ -343,7 +345,7 @@ const FriendsMainContentMui = () => {
               <Divider />
               <CardContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {sentRequests.map((request) => (
+                  {sentRequests.map((request: FriendRequest) => (
                     <Box
                       key={request._id}
                       sx={{
@@ -369,10 +371,10 @@ const FriendsMainContentMui = () => {
                             {request.toUserId.displayName}
                           </Typography>
                           {request.message && (
-                              <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary">
                               Lời nhắn:   {request.message}
-                              </Typography>
-                            )}
+                            </Typography>
+                          )}
                           <Typography variant="caption" color="text.secondary">
                             Gửi {formatTime(request.createdAt)}
                           </Typography>
@@ -408,7 +410,7 @@ const FriendsMainContentMui = () => {
                 avatar={<Person />}
                 title={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography fontWeight={600}>
                       Danh sách bạn bè
                     </Typography>
                     <Chip label={friends.length} size="small" color="secondary" />
@@ -418,8 +420,8 @@ const FriendsMainContentMui = () => {
               <Divider />
               <CardContent>
                 <Grid container spacing={1.5}>
-                  {friends.map((friend) => (
-                    <Grid sx={{ xs: 12, md:6, lg:4 }} key={friend._id}>
+                  {friends.map((friend: Friend) => (
+                    <Grid sx={{ xs: 12, md: 6, lg: 4 }} key={friend._id}>
                       <Box
                         sx={{
                           display: 'flex',
@@ -543,7 +545,7 @@ const FriendsMainContentMui = () => {
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               Nhập lời nhắn kèm (tùy chọn)
             </Typography>
-            <TextField 
+            <TextField
               fullWidth
               type="text"
               placeholder="Nhập lời nhắn..."

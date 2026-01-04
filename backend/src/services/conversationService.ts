@@ -12,6 +12,74 @@ export interface ConversationResponse {
 
 export class ConversationService {
   /**
+   * Tạo cuộc hội thoại nhóm
+   */
+  static async createGroupConversation(
+    adminId: Types.ObjectId,
+    participantIds: Types.ObjectId[],
+    name: string,
+    avatarUrl?: string
+  ): Promise<ConversationResponse> {
+    try {
+      if (participantIds.length < 2) {
+        return {
+          success: false,
+          message: "Cần ít nhất 2 thành viên để tạo nhóm"
+        };
+      }
+
+      const allParticipants = [adminId, ...participantIds];
+      const uniqueParticipants = Array.from(new Set(allParticipants.map(id => id.toString())));
+
+      // Initialize unread count map
+      const unreadCountMap = new Map();
+      uniqueParticipants.forEach(id => {
+        unreadCountMap.set(id, 0);
+      });
+
+      const createdConversation = await Conversation.create({
+        type: ConversationType.GROUP,
+        participants: uniqueParticipants,
+        adminId: adminId,
+        name: name,
+        avatarUrl: avatarUrl,
+        unreadCount: unreadCountMap
+      });
+
+      const conversation = await Conversation.findById(createdConversation._id)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
+      if (!conversation) {
+        return {
+          success: false,
+          message: "Không thể tạo nhóm"
+        };
+      }
+
+      // ✅ Transform unreadCount Map
+      const convObj = conversation.toObject();
+      const transformedConv = {
+        ...convObj,
+        unreadCount: 0 // New group has 0 unread
+      };
+
+      return {
+        success: true,
+        message: "Tạo nhóm thành công",
+        data: transformedConv
+      };
+
+    } catch (error) {
+      console.error("Lỗi tạo group conversation:", error);
+      return {
+        success: false,
+        message: "Lỗi tạo nhóm trò chuyện",
+        error
+      };
+    }
+  }
+
+  /**
    * Tạo hoặc lấy conversation giữa 2 users (Direct chat)
    */
   static async getOrCreateDirectConversation(
@@ -415,6 +483,210 @@ export class ConversationService {
         message: "Lỗi cập nhật lastMessage",
         error
       };
+    }
+  }
+
+  /**
+   * Thêm thành viên vào nhóm
+   */
+  static async addParticipants(
+    conversationId: Types.ObjectId,
+    adminId: Types.ObjectId,
+    participantIds: Types.ObjectId[]
+  ): Promise<ConversationResponse> {
+    try {
+      if (participantIds.length === 0) {
+        return {
+          success: false,
+          message: "Danh sách thành viên cần thêm trống"
+        };
+      }
+
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation) {
+        return { success: false, message: "Cuộc hội thoại không tồn tại" };
+      }
+
+      if (conversation.type !== ConversationType.GROUP) {
+        return { success: false, message: "Chỉ có thể thêm thành viên vào nhóm" };
+      }
+
+      // Check if admin is the creator/admin of the group?
+      // For now we allow any member to add? No, let's restrict to Admin for consisteny if adminId exists.
+      // But if adminId field is optional in schema (though we added it), checking it is safer.
+      if (conversation.adminId && conversation.adminId.toString() !== adminId.toString()) {
+        return { success: false, message: "Chỉ quản trị viên mới có thể thêm thành viên" };
+      }
+
+      const currentParticipantIds = conversation.participants.map(p => p.toString());
+      const newIds = participantIds
+        .map(id => id.toString())
+        .filter(id => !currentParticipantIds.includes(id));
+
+      if (newIds.length === 0) {
+        return { success: false, message: "Tất cả thành viên đã có trong nhóm" };
+      }
+
+      // Add new members
+      newIds.forEach(id => {
+        conversation.participants.push(new Types.ObjectId(id));
+        conversation.unreadCount.set(id, 0); // Init unread count
+      });
+
+      await conversation.save();
+
+      const updatedConv = await Conversation.findById(conversationId)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
+      return {
+        success: true,
+        message: "Đã thêm thành viên vào nhóm",
+        data: updatedConv
+      };
+
+    } catch (error) {
+      console.error("Lỗi thêm thành viên:", error);
+      return { success: false, message: "Lỗi thêm thành viên", error };
+    }
+  }
+
+  /**
+   * Xóa thành viên khỏi nhóm
+   */
+  static async removeParticipant(
+    conversationId: Types.ObjectId,
+    adminId: Types.ObjectId,
+    participantIdToRemove: Types.ObjectId
+  ): Promise<ConversationResponse> {
+    try {
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation) {
+        return { success: false, message: "Cuộc hội thoại không tồn tại" };
+      }
+
+      if (conversation.type !== ConversationType.GROUP) {
+        return { success: false, message: "Chức năng chỉ dành cho nhóm" };
+      }
+
+      if (conversation.adminId && conversation.adminId.toString() !== adminId.toString()) {
+        return { success: false, message: "Chỉ quản trị viên mới có thể xóa thành viên" };
+      }
+
+      const strIdToRemove = participantIdToRemove.toString();
+      if (!conversation.participants.some(p => p.toString() === strIdToRemove)) {
+        return { success: false, message: "Thành viên không tồn tại trong nhóm" };
+      }
+
+      // Remove
+      conversation.participants = conversation.participants.filter(p => p.toString() !== strIdToRemove) as Types.ObjectId[];
+      conversation.unreadCount.delete(strIdToRemove);
+
+      await conversation.save();
+
+      const updatedConv = await Conversation.findById(conversationId)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
+      return {
+        success: true,
+        message: "Đã xóa thành viên khỏi nhóm",
+        data: updatedConv
+      };
+    } catch (error) {
+      console.error("Lỗi xóa thành viên:", error);
+      return { success: false, message: "Lỗi xóa thành viên", error };
+    }
+  }
+
+  /**
+   * Rời nhóm
+   */
+  static async leaveConversation(
+    conversationId: Types.ObjectId,
+    userId: Types.ObjectId
+  ): Promise<ConversationResponse> {
+    try {
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation) {
+        return { success: false, message: "Cuộc hội thoại không tồn tại" };
+      }
+
+      if (conversation.type !== ConversationType.GROUP) {
+        return { success: false, message: "Chức năng chỉ dành cho nhóm" };
+      }
+
+      const strUserId = userId.toString();
+      if (!conversation.participants.some(p => p.toString() === strUserId)) {
+        return { success: false, message: "Bạn không phải thành viên của nhóm này" };
+      }
+
+      // If Admin leaves, pass admin to someone else? Or destroy group? 
+      // For simplicity, if admin leaves, just remove them. 
+      // Optionally assign new admin if participants > 0.
+      if (conversation.adminId && conversation.adminId.toString() === strUserId) {
+        // Auto-assign new admin (first participant)
+        const remaining = conversation.participants.filter(p => p.toString() !== strUserId);
+        if (remaining.length > 0 && remaining[0]) {
+          conversation.adminId = remaining[0];
+        } else {
+          // No one left, maybe deactivate group?
+          conversation.isActive = false;
+        }
+      }
+
+      // Remove user
+      conversation.participants = conversation.participants.filter(p => p.toString() !== strUserId) as Types.ObjectId[];
+      conversation.unreadCount.delete(strUserId);
+
+      await conversation.save();
+
+      return {
+        success: true,
+        message: "Đã rời nhóm thành công"
+      };
+
+    } catch (error) {
+      console.error("Lỗi rời nhóm:", error);
+      return { success: false, message: "Lỗi rời nhóm", error };
+    }
+  }
+
+  /**
+   * Cập nhật avatar của nhóm
+   */
+  static async updateGroupAvatar(
+    conversationId: Types.ObjectId,
+    adminId: Types.ObjectId,
+    avatarUrl: string
+  ): Promise<ConversationResponse> {
+    try {
+      const conversation = await Conversation.findById(conversationId);
+      if (!conversation) {
+        return { success: false, message: "Cuộc hội thoại không tồn tại" };
+      }
+
+      if (conversation.type !== ConversationType.GROUP) {
+        return { success: false, message: "Chức năng chỉ dành cho nhóm" };
+      }
+
+      if (conversation.adminId && conversation.adminId.toString() !== adminId.toString()) {
+        return { success: false, message: "Chỉ quản trị viên mới có thể thay đổi avatar" };
+      }
+
+      conversation.avatarUrl = avatarUrl;
+      await conversation.save();
+
+      const updatedConv = await Conversation.findById(conversationId)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
+      return {
+        success: true,
+        message: "Đã cập nhật avatar nhóm",
+        data: updatedConv
+      };
+
+    } catch (error) {
+      console.error("Lỗi cập nhật avatar nhóm:", error);
+      return { success: false, message: "Lỗi cập nhật avatar nhóm", error };
     }
   }
 }
