@@ -26,7 +26,7 @@ interface MessageState {
     _listenersSetup: boolean;
 
     //Thêm cursor pagination
-    cursor: Record<string, string | null>; 
+    cursor: Record<string, string | null>;
 
     // Actions
     sendMessage: (payload: SendMessagePayload) => void;
@@ -49,7 +49,14 @@ interface MessageState {
 
     // Internal state setters
     _addMessage: (conversationId: string, message: Message) => void;
-    _setMessages: (conversationId: string, messages: Message[], total: number, hasMore: boolean) => void;
+    _setMessages: (
+        conversationId: string,
+        messages: Message[],
+        total: number,
+        hasMore: boolean,
+        isPagination?: boolean,
+        nextCursor?: string
+    ) => void;
     _updateMessage: (messageId: string, updates: Partial<Message>) => void;
     _removeMessage: (messageId: string) => void;
     _updateTypingUsers: (data: UserTypingResponse) => void;
@@ -96,12 +103,12 @@ export const useMessageStore = create<MessageState>((set, get) => ({
      * Lấy danh sách tin nhắn áp dụng cursor Pagination
      */
     getMessagesByCursor: (conversationId: string, limit = 50, cursor?: string) => {
-          if (!messageService.isConnected()) {
+        if (!messageService.isConnected()) {
             console.warn("⚠️ Socket chưa kết nối, đợi kết nối để lấy tin nhắn");
             return;
         }
         set({ loading: true });
-        messageService.getMessagesByCursor({ conversationId, limit, nextCursor: cursor });
+        messageService.getMessagesByCursor({ conversationId, limit, cursor: cursor });
     },
 
     /**
@@ -220,19 +227,19 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 const currentUser = useAuthStore.getState().user;
                 const currentUserId = currentUser?._id;
                 const currentConversation = conversationStore.currentConversation;
-                
+
                 const conversation = conversationStore.conversations.find(c => c._id === data.conversationId);
-                
+
                 // ✅ Nếu conversation chưa có trong list (conversation mới tạo chưa có message)
                 // → Fetch lại conversations để lấy conversation này
                 if (!conversation) {
                     conversationStore.getConversations();
                     return;
                 }
-                
+
                 const isFromOtherUser = data.message.senderId._id !== currentUserId;
                 const isViewingConversation = currentConversation?._id === data.conversationId;
-                
+
                 const updates: Partial<typeof conversation> = {
                     lastMessage: {
                         content: data.message.content,
@@ -242,7 +249,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                     },
                     updatedAt: data.message.createdAt
                 };
-                
+
                 // ✅ Xử lý unreadCount:
                 // - Nếu KHÔNG đang xem conversation VÀ tin nhắn từ người khác → tăng unreadCount
                 // - Nếu ĐANG xem conversation VÀ tin nhắn từ người khác → backend đã tăng, frontend LOAD LẠI từ backend
@@ -255,15 +262,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                     const currentUnreadCount = conversation?.unreadCount || 0;
                     updates.unreadCount = currentUnreadCount + 1;
                 }
-                
+
                 conversationStore._updateConversation(data.conversationId, updates);
 
                 const updatedConversations = useConversationStore.getState().conversations;
 
-                const sorted = [...updatedConversations].sort((a, b) => 
+                const sorted = [...updatedConversations].sort((a, b) =>
                     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
                 );
-                
+
                 conversationStore._setConversations(sorted);
             } catch (error) {
                 console.error("❌ Lỗi khi cập nhật sidebar:", error);
@@ -277,12 +284,14 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 if (conversationId) {
                     // Filter out deleted messages
                     const activeMessages = data.data.messages.filter(msg => !msg.isDeleted);
-                    
+
                     get()._setMessages(
                         conversationId,
                         activeMessages,
                         data.data.total,
-                        data.data.hasMore
+                        data.data.hasMore,
+                        data.data.isPagination,
+                        data.data.nextCursor
                     );
                 }
                 set({ loading: false });
@@ -344,7 +353,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             const { message, conversation, unreadCount } = data;
             const conversationId = conversation._id;
             const currentUser = useAuthStore.getState().user;
-            
+
             // Bỏ qua notification từ chính mình
             if (message.senderId._id === currentUser?._id) {
                 return;
@@ -408,17 +417,45 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     /**
      * Set messages for conversation
      */
-    _setMessages: (conversationId: string, messages: Message[], _total: number, hasMore: boolean) => {
-        set(state => ({
-            messages: {
-                ...state.messages,
-                [conversationId]: messages.reverse()
-            },
-            hasMore: {
-                ...state.hasMore,
-                [conversationId]: hasMore
+    _setMessages: (
+        conversationId: string,
+        messages: Message[],
+        _total: number,
+        hasMore: boolean,
+        isPagination = false,
+        nextCursor?: string
+    ) => {
+        set(state => {
+            const currentMessages = state.messages[conversationId] || [];
+            // Backend sends Newest -> Oldest (Descending)
+            // Frontend stores Oldest -> Newest (Ascending)
+            const inboundMessages = messages.reverse();
+
+            let newMessages: Message[];
+            if (isPagination) {
+                // Prepend older messages
+                newMessages = [...inboundMessages, ...currentMessages];
+            } else {
+                // Initial load: Replace
+                newMessages = inboundMessages;
             }
-        }));
+
+            return {
+                messages: {
+                    ...state.messages,
+                    [conversationId]: newMessages
+                },
+                hasMore: {
+                    ...state.hasMore,
+                    [conversationId]: hasMore
+                },
+                cursor: {
+                    ...state.cursor,
+                    [conversationId]: nextCursor || null
+                }
+            };
+        });
+        console.log("Updated cursor for", conversationId, ":", nextCursor);
     },
 
     /**
@@ -450,24 +487,24 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         set(state => {
             const newMessages = { ...state.messages };
             let deletedFromConversationId: string | null = null;
-            
+
             for (const conversationId in newMessages) {
                 const originalLength = newMessages[conversationId].length;
                 newMessages[conversationId] = newMessages[conversationId].filter(
                     m => m._id !== messageId
                 );
-                
+
                 // Track which conversation this message was deleted from
                 if (newMessages[conversationId].length !== originalLength) {
                     deletedFromConversationId = conversationId;
                 }
             }
-            
+
             // Update lastMessage in conversation if needed
             if (deletedFromConversationId) {
                 const remainingMessages = newMessages[deletedFromConversationId];
                 const conversationStore = useConversationStore.getState();
-                
+
                 if (remainingMessages.length === 0) {
                     // No messages left - set lastMessage to undefined
                     conversationStore._updateConversation(deletedFromConversationId, {
@@ -486,7 +523,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                     });
                 }
             }
-            
+
             return { messages: newMessages };
         });
     },

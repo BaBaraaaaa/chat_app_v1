@@ -1,22 +1,22 @@
 import { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Avatar, 
-  IconButton, 
-  Menu, 
-  MenuItem, 
-  ListItemIcon, 
+import {
+  Box,
+  Typography,
+  Avatar,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
   ListItemText,
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { 
-  Phone, 
-  VideoCall, 
-  MoreVert, 
-  Person, 
-  Search, 
+import {
+  Phone,
+  VideoCall,
+  MoreVert,
+  Person,
+  Search,
   Archive,
   ChatBubbleOutline,
   PersonAdd,
@@ -38,16 +38,22 @@ interface ChatAreaProps {
   isActive?: boolean;
   onMobileBack?: () => void;
   isMobile?: boolean;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loading?: boolean;
 }
 
-export default function ChatAreaMui({ 
-  selectedContact, 
-  messages, 
+export default function ChatAreaMui({
+  selectedContact,
+  messages,
   onSendMessage,
   isFriend = true,
   isActive = true,
   onMobileBack,
-  isMobile = false
+  isMobile = false,
+  onLoadMore,
+  hasMore = false,
+  loading = false
 }: ChatAreaProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -102,24 +108,24 @@ export default function ChatAreaMui({
   };
 
   // Menu actions
-  const handleCallPhone = () => { 
-    toast.warning('Chức năng gọi điện thoại đang được phát triển'); 
+  const handleCallPhone = () => {
+    toast.warning('Chức năng gọi điện thoại đang được phát triển');
     handleMenuClose();
   };
-  const handleCallVideo = () => { 
-    toast.warning('Chức năng gọi video đang được phát triển'); 
+  const handleCallVideo = () => {
+    toast.warning('Chức năng gọi video đang được phát triển');
     handleMenuClose();
   };
-  const handleViewProfile = () => { 
-    toast.warning('Chức năng xem hồ sơ đang được phát triển'); 
+  const handleViewProfile = () => {
+    toast.warning('Chức năng xem hồ sơ đang được phát triển');
     handleMenuClose();
   };
-  const handleSearch = () => { 
-    toast.warning('Chức năng tìm kiếm tin nhắn đang được phát triển'); 
+  const handleSearch = () => {
+    toast.warning('Chức năng tìm kiếm tin nhắn đang được phát triển');
     handleMenuClose();
   };
-  const handleArchive = () => { 
-    toast.warning('Chức năng lưu trữ tin nhắn đang được phát triển'); 
+  const handleArchive = () => {
+    toast.warning('Chức năng lưu trữ tin nhắn đang được phát triển');
     handleMenuClose();
   };
 
@@ -150,24 +156,24 @@ export default function ChatAreaMui({
               justifyContent: 'center',
             }}
           >
-            <ChatBubbleOutline sx={{ 
-              fontSize: { xs: 32, sm: 48 }, 
-              color: 'primary.main', 
-              opacity: 1 
+            <ChatBubbleOutline sx={{
+              fontSize: { xs: 32, sm: 48 },
+              color: 'primary.main',
+              opacity: 1
             }} />
           </Box>
-          <Typography 
-            variant={ isSmallScreen ? "h6" : "h5" } 
-            fontWeight="semibold" 
+          <Typography
+            variant={isSmallScreen ? "h6" : "h5"}
+            fontWeight="semibold"
             gutterBottom
           >
             Chào mừng đến với ChatApp
           </Typography>
-          <Typography 
-            component="p" 
-            color="text.secondary" 
+          <Typography
+            component="p"
+            color="text.secondary"
             sx={{ mb: { xs: 2, sm: 3 } }}
-            variant={ isSmallScreen ? "body2" : "body1" }
+            variant={isSmallScreen ? "body2" : "body1"}
           >
             Chọn một cuộc trò chuyện để bắt đầu nhắn tin
           </Typography>
@@ -215,9 +221,9 @@ export default function ChatAreaMui({
       >
         {/* Mobile Back Button */}
         {isMobile && onMobileBack && (
-          <IconButton 
+          <IconButton
             onClick={onMobileBack}
-            sx={{ 
+            sx={{
               mr: 1,
               color: 'text.primary'
             }}
@@ -226,9 +232,9 @@ export default function ChatAreaMui({
           </IconButton>
         )}
 
-        <Avatar 
+        <Avatar
           src={selectedContact.avatarUrl}
-          sx={{ 
+          sx={{
             width: { xs: 36, sm: 40 },
             height: { xs: 36, sm: 40 }
           }}
@@ -236,22 +242,22 @@ export default function ChatAreaMui({
           {selectedContact.name[0]}
         </Avatar>
         <Box sx={{ flex: 1 }}>
-          <Typography 
-            variant="subtitle1" 
+          <Typography
+            variant="subtitle1"
             fontWeight="bold"
             sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}
           >
             {selectedContact.name}
           </Typography>
-          <Typography 
-            variant="caption" 
+          <Typography
+            variant="caption"
             color="text.secondary"
             sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}
           >
             {selectedContact.isOnline ? 'Đang hoạt động' : 'Không hoạt động'}
           </Typography>
         </Box>
-        
+
         {/* Action Buttons - Hide some on mobile */}
         {!isSmallScreen && (
           <>
@@ -302,14 +308,18 @@ export default function ChatAreaMui({
       </Box>
 
       {/* Messages */}
-      <MessageListMui 
+      <MessageListMui
+        key={selectedContact?.id}
         messages={messages}
         onEdit={handleEditMessage}
         onDelete={handleDeleteMessage}
+        onLoadMore={onLoadMore}
+        hasMore={hasMore}
+        loading={loading}
       />
 
       {/* Input */}
-      <MessageInputMui 
+      <MessageInputMui
         initialValue={editingContent}
         onSendMessage={handleSendOrEdit}
         editingMessageId={editingMessageId}

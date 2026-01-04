@@ -7,7 +7,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 import { conversationService } from "@/socket/conversationService"; // Real-time only
 import { conversationApiService } from "@/services/conversationApiService"; // REST API
-import type { 
+import type {
   Conversation,
   ConversationUpdatedResponse,
 } from "@/types/message";
@@ -63,25 +63,25 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     try {
       set({ loading: true });
       const response = await conversationApiService.getOrCreateConversation(otherUserId);
-      
+
       if (response.success && response.data) {
-        const conversation = response.data ;
-        
+        const conversation = response.data;
+
         // Add to conversations list if not exists
         const state = get();
         const exists = state.conversations.find(c => c._id === conversation?._id);
         if (!exists) {
-          set({ 
+          set({
             conversations: [conversation, ...state.conversations],
             currentConversation: conversation
           });
         } else {
           set({ currentConversation: conversation });
         }
-        
+
         // Join room for real-time updates
         conversationService.joinConversationRoom(conversation._id);
-        
+
         toast.success("Cuộc hội thoại đã sẵn sàng");
       } else {
         toast.error("Không thể tạo cuộc hội thoại");
@@ -101,7 +101,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     try {
       set({ loading: true });
       const response = await conversationApiService.getConversations();
-      
+
       if (response.success) {
         set({ conversations: response.data });
       } else {
@@ -122,7 +122,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     try {
       set({ loading: true });
       const response = await conversationApiService.getConversationDetail(conversationId);
-      
+
       if (response.success) {
         set({ currentConversation: response.data });
         // Join room for real-time updates
@@ -145,7 +145,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     try {
       set({ loading: true });
       const response = await conversationApiService.searchConversations(query);
-      
+
       if (response.success) {
         set({ searchResults: response.data });
       } else {
@@ -168,9 +168,9 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     try {
       // Optimistic update
       get()._removeConversation(conversationId);
-      
+
       const response = await conversationApiService.deleteConversation(conversationId);
-      
+
       if (response.success) {
         toast.success("Đã xóa cuộc hội thoại");
         // Leave room
@@ -195,9 +195,13 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   getTotalUnreadCount: async () => {
     try {
       const response = await conversationApiService.getTotalUnreadCount();
-      
-      if (response.success) {
-        set({ totalUnreadCount: response.data });
+
+      if (response.success && response.data) {
+        // Backend returns object { totalUnread: number }
+        const count = typeof response.data === 'object' && 'totalUnread' in response.data
+          ? (response.data as any).totalUnread
+          : response.data;
+        set({ totalUnreadCount: Number(count) });
       }
     } catch (error) {
       console.error("Failed to get total unread count:", error);
@@ -211,7 +215,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     try {
       // Optimistic update
       get()._updateConversation(conversationId, { unreadCount: 0 });
-      
+
       const response = await conversationApiService.resetUnreadCount(conversationId);
       if (response.success) {
         // Also notify real-time
@@ -240,12 +244,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     if (prevConversation) {
       conversationService.leaveConversationRoom(prevConversation._id);
     }
-    
+
     // Join new room if conversation exists
     if (conversation) {
       conversationService.joinConversationRoom(conversation._id);
     }
-    
+
     set({ currentConversation: conversation });
   },
 
@@ -338,12 +342,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   _updateConversation: (conversationId: string, updates: Partial<Conversation>) => {
     const state = get();
     const conversationIndex = state.conversations.findIndex(c => c._id === conversationId);
-    
+
     if (conversationIndex !== -1) {
       const updatedConversations = [...state.conversations];
       updatedConversations[conversationIndex] = { ...updatedConversations[conversationIndex], ...updates };
       set({ conversations: updatedConversations });
-      
+
       // Also update current conversation if it matches
       if (state.currentConversation?._id === conversationId) {
         set({ currentConversation: { ...state.currentConversation, ...updates } });
@@ -357,8 +361,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   _removeConversation: (conversationId: string) => {
     const state = get();
     const filteredConversations = state.conversations.filter(c => c._id !== conversationId);
-    
-    set({ 
+
+    set({
       conversations: filteredConversations,
       currentConversation: state.currentConversation?._id === conversationId ? null : state.currentConversation
     });

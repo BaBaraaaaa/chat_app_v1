@@ -20,7 +20,7 @@ const ChatPanel = () => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const { user } = useAuthStore();
   const { isConnected, onlineUsers } = useSocketStore();
   const { friends, getFriendsList, loading: friendsLoading } = useFriendStore();
@@ -29,8 +29,9 @@ const ChatPanel = () => {
     getConversations,
     setCurrentConversation,
     _updateConversation,
+    resetUnreadCount,
   } = useConversationStore();
-  const { messages, sendMessage, getMessages, joinConversation, getMessagesByCursor } =
+  const { messages, sendMessage, getMessages, joinConversation, getMessagesByCursor, cursor, hasMore, loading } =
     useMessageStore();
 
   // ✅ Load conversations và friends khi connected
@@ -58,14 +59,8 @@ const ChatPanel = () => {
         selectedConversation.unreadCount &&
         selectedConversation.unreadCount > 0
       ) {
-        // ✅ Update local state ngay lập tức (optimistic update)
-        _updateConversation(selectedConversation._id, { unreadCount: 0 });
-
-        // ✅ Gọi API để persist vào database
-        // conversationService.resetUnreadCount({
-        //   conversationId: selectedConversation._id,
-        // });
-        conversationApiService.resetUnreadCount(selectedConversation._id);
+        // ✅ Reset unread count via Store Action (handles total count update too)
+        resetUnreadCount(selectedConversation._id);
       }
     }
   }, [
@@ -157,7 +152,7 @@ const ChatPanel = () => {
       };
       sendMessage(payload);
     } else {
-      return ;
+      return;
     }
   };
 
@@ -238,12 +233,12 @@ const ChatPanel = () => {
         selectedConversation.lastMessage?.content || "Bắt đầu cuộc trò chuyện",
       timestamp: selectedConversation.lastMessage
         ? new Date(selectedConversation.lastMessage.sentAt).toLocaleTimeString(
-            "vi-VN",
-            {
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          )
+          "vi-VN",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        )
         : "",
       isOnline,
       unreadCount: selectedConversation.unreadCount || 0,
@@ -254,10 +249,10 @@ const ChatPanel = () => {
     <>
       {/* Chat Panel */}
       <Box
-        sx={{ 
-          display: "flex", 
-          flex: 1, 
-          overflow: "hidden", 
+        sx={{
+          display: "flex",
+          flex: 1,
+          overflow: "hidden",
           height: "100%",
           // position: 'relative'
         }}
@@ -284,15 +279,24 @@ const ChatPanel = () => {
 
         {/* Chat Area */}
         {(!isMobile || selectedConversation) && (
-            <ChatAreaMui
-              selectedContact={selectedContact}
-              messages={uiMessages}
-              onSendMessage={handleSendMessage}
-              isFriend={isFriend}
-              isActive={selectedConversation?.isActive ?? true}
-              onMobileBack={isMobile ? handleMobileBack : undefined}
-              isMobile={isMobile}
-            />
+          <ChatAreaMui
+            selectedContact={selectedContact}
+            messages={uiMessages}
+            onSendMessage={handleSendMessage}
+            isFriend={isFriend}
+            isActive={selectedConversation?.isActive ?? true}
+            onMobileBack={isMobile ? handleMobileBack : undefined}
+            isMobile={isMobile}
+            onLoadMore={() => {
+              if (selectedConversation) {
+                const nextCursor = cursor[selectedConversation._id];
+                console.log("Loading more messages with cursor:", nextCursor);
+                getMessagesByCursor(selectedConversation._id, 50, nextCursor || undefined);
+              }
+            }}
+            hasMore={hasMore[selectedConversation?._id || ""] || false}
+            loading={loading}
+          />
         )}
       </Box>
 

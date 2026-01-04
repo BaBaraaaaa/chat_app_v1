@@ -13,17 +13,27 @@ interface MobileNavigationProps {
   activeView: 'chat' | 'friends' | 'settings' | 'notifications';
   onViewChange: (view: 'chat' | 'friends' | 'settings' | 'notifications') => void;
   notificationCount?: number;
+  unreadMessageCount?: number;
 }
 
 export default function MobileNavigationMui({
   activeView,
   onViewChange,
   notificationCount = 0,
+  unreadMessageCount = 0,
 }: MobileNavigationProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const menuItems = [
-    { id: 'chat' as const, label: 'Chat', icon: <Chat /> },
+    {
+      id: 'chat' as const,
+      label: 'Chat',
+      icon: (
+        <Badge badgeContent={unreadMessageCount} color="error">
+          <Chat />
+        </Badge>
+      )
+    },
     { id: 'friends' as const, label: 'Bạn bè', icon: <People /> },
     {
       id: 'notifications' as const,

@@ -23,6 +23,9 @@ interface MessageListProps {
   messages: Message[];
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loading?: boolean;
 }
 
 // Memoized typing indicator
@@ -66,7 +69,7 @@ const TypingIndicator = memo(({ userInitial, userAvatar }: { userInitial: string
   </Box>
 ));
 
-function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
+function MessageListMui({ messages, onEdit, onDelete, onLoadMore, hasMore, loading: parentLoading }: MessageListProps) {
   const { user } = useAuthStore();
   const { loading, typingUsers, deleteMessage, unreadCount } =
     useMessageStore();
@@ -79,18 +82,33 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const prevMessageCountRef = useRef(messages.length);
+  const prevScrollHeightRef = useRef(0); // Store previous scroll height for position restoration
+  const prevLatestMessageIdRef = useRef<string | null>(null);
+
+  // Use parent loading if provided, otherwise use global loading
+  const isLoading = parentLoading || loading;
 
   const conversationId = currentConversation?._id || "";
   const currentUnreadCount = unreadCount[conversationId] || 0;
 
-  // Track new messages
+  // Track new messages (Only trigger if LATEST message changes, effectively ignoring prepended messages)
   useEffect(() => {
-    if (messages.length > prevMessageCountRef.current && !isAtBottom) {
+    const latestMessage = messages[messages.length - 1];
+    const latestMessageId = latestMessage?._id;
+
+    if (
+      latestMessageId !== prevLatestMessageIdRef.current &&
+      prevLatestMessageIdRef.current !== null && // Ignore initial load
+      !isAtBottom
+    ) {
       setHasNewMessages(true);
     }
+
     if (isAtBottom) setHasNewMessages(false);
+
     prevMessageCountRef.current = messages.length;
-  }, [messages.length, isAtBottom]);
+    prevLatestMessageIdRef.current = latestMessageId || null;
+  }, [messages, isAtBottom]);
 
   // Debounced scroll check
   useEffect(() => {
@@ -106,6 +124,13 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
         const atBottom = distanceFromBottom < 150;
 
         setIsAtBottom(atBottom);
+
+        // ✅ Infinite Scroll: Check if near top to load more
+        if (scrollTop < 50 && hasMore && !isLoading && onLoadMore) {
+          // Save current scroll height before loading more
+          prevScrollHeightRef.current = scrollHeight;
+          onLoadMore();
+        }
 
         // Mark as read when at bottom and has unread messages
         if (atBottom && currentUnreadCount > 0) {
@@ -126,15 +151,31 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
       scrollArea.removeEventListener("scroll", handleScroll);
       if (timeout) clearTimeout(timeout);
     };
-  }, [currentUnreadCount, conversationId, _updateConversation]);
+  }, [currentUnreadCount, conversationId, _updateConversation, hasMore, isLoading, onLoadMore]);
 
-  // Scroll to bottom when needed
+  // Scroll handling: Auto-scroll to bottom or Restore position
   useLayoutEffect(() => {
-    if (!isAtBottom || loading || messages.length === 0) return;
     const scrollArea = scrollAreaRef.current;
     if (!scrollArea) return;
-    scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: "smooth" });
-  }, [messages.length, isAtBottom, loading]);
+
+    const isNewMessagesAdded = messages.length > prevMessageCountRef.current;
+
+    // Case 1: Initial Load or User at Bottom -> Scroll to Bottom
+    if (isAtBottom && !parentLoading && messages.length > 0) {
+      // Only scroll to bottom if we were already at bottom or it's initial load
+      // AND we are not loading more (if parentLoading is true, we might be prepending)
+      // Actually, for initial load parentLoading becomes false.
+      scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: "auto" });
+    }
+    // Case 2: Pagination Load (Prepending messages) -> Restore Scroll Position
+    else if (isNewMessagesAdded && !isAtBottom && prevScrollHeightRef.current > 0) {
+      const newScrollHeight = scrollArea.scrollHeight;
+      const scrollDiff = newScrollHeight - prevScrollHeightRef.current;
+      scrollArea.scrollTop = scrollDiff;
+      prevScrollHeightRef.current = 0; // Reset
+    }
+
+  }, [messages.length, isAtBottom, parentLoading]);
 
   // Typing users for this conversation
   const typingUsersInConversation = conversationId
@@ -185,7 +226,7 @@ function MessageListMui({ messages, onEdit, onDelete }: MessageListProps) {
           message.senderId._id === user?._id
             ? user.displayName
             : message.senderId.displayName ||
-              message.senderId.username
+            message.senderId.username
         }
         senderAvatar={
           message.senderId._id === user?._id

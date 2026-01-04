@@ -52,7 +52,11 @@ export const useConversationCleanup = (
       // Leave inactive conversations
       conversationsToLeave.forEach(convId => {
         if (joinedConversations.has(convId)) {
-          // TODO: Implement leave conversation logic
+          // Leave socket room
+          import('@/socket/conversationService').then(({ conversationService }) => {
+            conversationService.leaveConversationRoom(convId);
+          });
+
           joinedConversations.delete(convId);
           lastActiveRef.current.delete(convId);
         }

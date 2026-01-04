@@ -213,17 +213,17 @@ export class MessageService {
       if (cursor) {
         query._id = { $lt: new Types.ObjectId(cursor) }; //lấy các message có id nhỏ hơn cursor
       }
-      else{
+      else {
         query._id = { $exists: true }; //lấy tất cả message
       }
       // Lấy messages
-      const  message = await Message.find<IMessage>(query)
-      .populate('senderId', 'username displayName avatarUrl firstName lastName')
-      .populate('receiverId', 'username displayName avatarUrl firstName lastName')
-      .populate('replyTo')
-      .sort({ _id: -1 })
-      .limit(limit + 1); //lấy thêm 1 message để kiểm tra còn tin nhắn tiếp theo hay không
-     
+      const message = await Message.find<IMessage>(query)
+        .populate('senderId', 'username displayName avatarUrl firstName lastName')
+        .populate('receiverId', 'username displayName avatarUrl firstName lastName')
+        .populate('replyTo')
+        .sort({ _id: -1 })
+        .limit(limit + 1); //lấy thêm 1 message để kiểm tra còn tin nhắn tiếp theo hay không
+
 
       // Xác định hasMore và cursor mới
       const hasMore = message.length > limit;
@@ -234,13 +234,19 @@ export class MessageService {
       const lastMessage = message[message.length - 1];
       const nextCursor = lastMessage ? lastMessage._id.toString() : null;
 
+      const total = await Message.countDocuments({
+        conversationId,
+        isDeleted: false
+      });
+
       return {
         success: true,
         message: "Lấy tin nhắn thành công",
         data: {
-          messages: message.reverse(), 
+          messages: message, // Keep descending order (Newest -> Oldest)
           nextCursor: nextCursor,
-          hasMore
+          hasMore,
+          total
         }
       };
     } catch (error) {

@@ -14,16 +14,26 @@ interface NavigationSidebarProps {
   activeView: 'chat' | 'friends' | 'settings' | 'notifications';
   onViewChange: (view: 'chat' | 'friends' | 'settings' | 'notifications') => void;
   notificationCount?: number;
+  unreadMessageCount?: number;
 }
 
 export default function NavigationSidebarMui({
   activeView,
   onViewChange,
   notificationCount = 0,
+  unreadMessageCount = 0,
 }: NavigationSidebarProps) {
   const { user, signOut } = useAuthStore();
   const menuItems = [
-    { id: 'chat' as const, icon: <Chat />, tooltip: 'Tin nhắn' },
+    {
+      id: 'chat' as const,
+      icon: (
+        <Badge badgeContent={unreadMessageCount} color="error">
+          <Chat />
+        </Badge>
+      ),
+      tooltip: 'Tin nhắn'
+    },
     { id: 'friends' as const, icon: <People />, tooltip: 'Bạn bè' },
     {
       id: 'notifications' as const,
@@ -62,7 +72,7 @@ export default function NavigationSidebarMui({
             fontSize: '1.5rem',
           }}
         >
-          
+
         </Avatar>
       </Box>
 

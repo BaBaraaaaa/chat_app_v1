@@ -66,9 +66,9 @@ export const registerMessageHandler = (
 
       if (result.success) {
         const roomName = `conversation_${conversationId}`;
-        
+
         // ✅ Log để debug
-        
+
         // ✅ Broadcast NEW_MESSAGE cho TẤT CẢ clients trong conversation room
         io.to(roomName).emit("NEW_MESSAGE", {
           message: result.data,
@@ -81,14 +81,14 @@ export const registerMessageHandler = (
             conversationId,
             senderId
           );
-          
+
           if (conversationResult.success && conversationResult.data?.participants) {
             for (const participant of conversationResult.data.participants) {
               const participantId = participant._id?.toString();
-              
+
               if (participantId && participantId !== senderId) {
                 const participantSocket = onlineUsers.find(u => u.userId === participantId);
-                
+
                 if (participantSocket) {
                   // ✅ Safe way to get unreadCount
                   let unreadCount = 0;
@@ -103,12 +103,18 @@ export const registerMessageHandler = (
                   } else {
                     unreadCount = 1; // First unread message
                   }
-                  
+
                   io.to(participantSocket.socketId).emit("NEW_MESSAGE_NOTIFICATION", {
                     message: result.data,
                     conversation: conversationResult.data,
                     unreadCount: unreadCount,
                     from: 'notification'
+                  });
+
+                  // ✅ Also emit UNREAD_COUNT_CHANGED for real-time badge update
+                  io.to(participantSocket.socketId).emit("UNREAD_COUNT_CHANGED", {
+                    conversationId,
+                    unreadCount
                   });
                 }
               }
@@ -197,7 +203,13 @@ export const registerMessageHandler = (
         cursor
       );
 
-      socket.emit("MESSAGES_LIST", result);
+      socket.emit("MESSAGES_LIST", {
+        ...result,
+        data: {
+          ...result.data,
+          isPagination: !!cursor // True if cursor exists (Load More), False if initial load
+        }
+      });
 
     } catch (error) {
       console.error("Lỗi lấy tin nhắn theo cursor qua socket:", error);
@@ -234,7 +246,7 @@ export const registerMessageHandler = (
         if (message && message.senderId) {
           const senderId = message.senderId._id || message.senderId;
           const sender = onlineUsers.find(u => u.userId === senderId.toString());
-          
+
           if (sender) {
             io.to(sender.socketId).emit("MESSAGE_READ", {
               messageId,
@@ -307,12 +319,12 @@ export const registerMessageHandler = (
 
       if (result.success) {
         socket.emit("DELETE_MESSAGE_SUCCESS", result);
-        
+
         // 📤 Thông báo cho các participants khác trong conversation
         const message = result.data;
         if (message && message.conversationId) {
           const roomName = `conversation_${message.conversationId}`;
-          
+
           // Emit MESSAGE_DELETED event
           socket.to(roomName).emit("MESSAGE_DELETED", {
             messageId,
@@ -369,7 +381,7 @@ export const registerMessageHandler = (
 
       if (result.success) {
         socket.emit("EDIT_MESSAGE_SUCCESS", result);
-        
+
         // 📤 Thông báo cho các participants khác trong conversation
         const message = result.data;
         if (message && message.conversationId) {

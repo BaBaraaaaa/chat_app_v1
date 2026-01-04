@@ -166,7 +166,7 @@ export interface GetMessagesPayload {
 export interface GetMessagesByCursorPayload {
   conversationId: string;
   limit?: number;
-  nextCursor?: string;
+  cursor?: string;
 }
 
 export interface MessagesListResponse {
@@ -176,6 +176,8 @@ export interface MessagesListResponse {
     messages: Message[];
     total: number;
     hasMore: boolean;
+    nextCursor?: string;
+    isPagination?: boolean;
   };
 }
 
