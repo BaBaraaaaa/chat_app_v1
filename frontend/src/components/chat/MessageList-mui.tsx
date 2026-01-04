@@ -280,15 +280,16 @@ function MessageListMui({ messages, onEdit, onDelete, onLoadMore, hasMore, loadi
               {renderedMessages}
 
               {typingUsersInConversation.length > 0 &&
-                typingUsersInConversation.map((_u, index) => {
-                  const otherUser = currentConversation?.participants.find(
-                    (p) => p._id !== user?._id
+                typingUsersInConversation.map((typingUserId) => {
+                  const typingUser = currentConversation?.participants.find(
+                    (p) => p._id === typingUserId
                   );
+                  if (!typingUser) return null;
                   return (
                     <TypingIndicator
-                      key={index}
-                      userInitial={otherUser?.displayName?.charAt(0) || "U"}
-                      userAvatar={otherUser?.avatarUrl}
+                      key={typingUserId}
+                      userInitial={typingUser.displayName?.charAt(0) || "U"}
+                      userAvatar={typingUser.avatarUrl}
                     />
                   );
                 })}

@@ -3,6 +3,8 @@ import Message from "../models/Message";
 import User from "../models/User";
 import { Types } from "mongoose";
 import { MessageService } from "./messageService";
+import { getIO } from "../libs/socket";
+
 export interface ConversationResponse {
   success: boolean;
   message: string;
@@ -62,6 +64,20 @@ export class ConversationService {
         ...convObj,
         unreadCount: 0 // New group has 0 unread
       };
+
+      // 🔔 Notify all participants about the new conversation via Socket.IO
+      try {
+        const io = getIO();
+
+        uniqueParticipants.forEach(participantId => {
+          // Notify each participant in their personal room
+          io.to(`user_${participantId}`).emit("NEW_CONVERSATION_NOTIFICATION", {
+            conversation: transformedConv
+          });
+        });
+      } catch (socketError) {
+        console.error("⚠️ Error emitting socket notification for new group:", socketError);
+      }
 
       return {
         success: true,
@@ -635,6 +651,9 @@ export class ConversationService {
 
       await conversation.save();
 
+      const updatedConv = await Conversation.findById(conversationId)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
       // Tạo tin nhắn hệ thống
       try {
         const addedUsers = await User.find({ _id: { $in: newIds } });
@@ -643,7 +662,7 @@ export class ConversationService {
           const names = addedUsers.map(u => u.displayName || u.username).join(", ");
           const systemContent = `${adminUser.displayName || adminUser.username} đã thêm ${names} vào nhóm`;
 
-          await Message.create({
+          const systemMessage = await Message.create({
             conversationId,
             senderId: new Types.ObjectId("000000000000000000000000"),
             content: systemContent,
@@ -654,19 +673,64 @@ export class ConversationService {
           // Cập nhật lastMessage
           await Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: {
+              messageId: systemMessage._id,
               content: systemContent,
               senderId: new Types.ObjectId("000000000000000000000000"),
               sentAt: new Date(),
               type: "system"
             }
           });
+
+          // 🔔 Emit notifications via Socket.IO
+          try {
+            const io = getIO();
+
+            // 1. Broadcast system message to everyone in the room
+            io.to(`conversation_${conversationId}`).emit("NEW_MESSAGE", {
+              conversationId,
+              message: await systemMessage.populate('senderId', 'username displayName avatarUrl')
+            });
+
+            // 2. Notify new members about the conversation
+            addedUsers.forEach(user => {
+              io.to(`user_${user._id}`).emit("NEW_CONVERSATION_NOTIFICATION", {
+                conversation: updatedConv || conversation
+              });
+            });
+
+            // 3. Notify existing members about new joiners
+            io.to(`conversation_${conversationId}`).emit("GROUP_MEMBER_JOINED", {
+              conversationId,
+              newMembers: addedUsers,
+              conversation: updatedConv, // Use 'conversation' to match frontend expectance
+              message: systemContent
+            });
+
+            // 4. Notify ALL participants via MESSAGE_NOTIFICATION (for sidebar update)
+            if (updatedConv && updatedConv.participants) {
+              const populatedMessage = await systemMessage.populate('senderId', 'username displayName avatarUrl');
+              updatedConv.participants.forEach((p: any) => {
+                const pId = p._id.toString();
+                io.to(`user_${pId}`).emit("NEW_MESSAGE_NOTIFICATION", {
+                  message: populatedMessage,
+                  conversation: updatedConv,
+                  unreadCount: (updatedConv.unreadCount?.get(pId) || 0),
+                  from: 'system'
+                });
+
+                io.to(`user_${pId}`).emit("UNREAD_COUNT_CHANGED", {
+                  conversationId: conversationId.toString(),
+                  unreadCount: (updatedConv.unreadCount?.get(pId) || 0)
+                });
+              });
+            }
+          } catch (socketError) {
+            console.error("⚠️ Socket notification error in addParticipants:", socketError);
+          }
         }
       } catch (sysErr) {
         console.error("Lỗi tạo tin nhắn hệ thống khi thêm thành viên:", sysErr);
       }
-
-      const updatedConv = await Conversation.findById(conversationId)
-        .populate('participants', 'username displayName avatarUrl firstName lastName email');
 
       return {
         success: true,
@@ -713,6 +777,9 @@ export class ConversationService {
 
       await conversation.save();
 
+      const updatedConv = await Conversation.findById(conversationId)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
       // Tạo tin nhắn hệ thống
       try {
         const removedUser = await User.findById(participantIdToRemove);
@@ -720,7 +787,7 @@ export class ConversationService {
         if (removedUser && adminUser) {
           const systemContent = `${adminUser.displayName || adminUser.username} đã xóa ${removedUser.displayName || removedUser.username} khỏi nhóm`;
 
-          await Message.create({
+          const systemMessage = await Message.create({
             conversationId,
             senderId: new Types.ObjectId("000000000000000000000000"),
             content: systemContent,
@@ -731,19 +798,70 @@ export class ConversationService {
           // Cập nhật lastMessage
           await Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: {
+              messageId: systemMessage._id,
               content: systemContent,
               senderId: new Types.ObjectId("000000000000000000000000"),
               sentAt: new Date(),
               type: "system"
             }
           });
+
+          // 🔔 Emit notifications via Socket.IO
+          try {
+            const io = getIO();
+
+            // 1. Broadcast system message to everyone in the room
+            io.to(`conversation_${conversationId}`).emit("NEW_MESSAGE", {
+              conversationId,
+              message: await systemMessage.populate('senderId', 'username displayName avatarUrl')
+            });
+
+            // 2. Notify the removed user
+            io.to(`user_${participantIdToRemove}`).emit("GROUP_MEMBER_REMOVED", {
+              conversationId: conversationId.toString(),
+              message: "Bạn đã bị xóa khỏi nhóm",
+              removedBy: adminId.toString()
+            });
+
+            // 3. Force removed user to leave the conversation room if they have an active socket
+            const sockets = await io.in(`user_${participantIdToRemove}`).fetchSockets();
+            sockets.forEach(s => {
+              s.leave(`conversation_${conversationId}`);
+            });
+
+            // 4. Notify remaining members about the removal
+            io.to(`conversation_${conversationId}`).emit("GROUP_MEMBER_REMOVED", {
+              conversationId,
+              participantId: participantIdToRemove,
+              updatedConversation: updatedConv, // Send full updated conversation
+              message: systemContent
+            });
+
+            // 5. Notify all remaining members via MESSAGE_NOTIFICATION (for sidebar update)
+            if (updatedConv && updatedConv.participants) {
+              const populatedMessage = await systemMessage.populate('senderId', 'username displayName avatarUrl');
+              updatedConv.participants.forEach((p: any) => {
+                const pId = p._id.toString();
+                io.to(`user_${pId}`).emit("NEW_MESSAGE_NOTIFICATION", {
+                  message: populatedMessage,
+                  conversation: updatedConv,
+                  unreadCount: (updatedConv.unreadCount?.get(pId) || 0),
+                  from: 'system'
+                });
+
+                io.to(`user_${pId}`).emit("UNREAD_COUNT_CHANGED", {
+                  conversationId: conversationId.toString(),
+                  unreadCount: (updatedConv.unreadCount?.get(pId) || 0)
+                });
+              });
+            }
+          } catch (socketError) {
+            console.error("⚠️ Socket notification error in removeParticipant:", socketError);
+          }
         }
       } catch (sysErr) {
         console.error("Lỗi tạo tin nhắn hệ thống khi xóa thành viên:", sysErr);
       }
-
-      const updatedConv = await Conversation.findById(conversationId)
-        .populate('participants', 'username displayName avatarUrl firstName lastName email');
 
       return {
         success: true,
@@ -798,13 +916,16 @@ export class ConversationService {
 
       await conversation.save();
 
+      const updatedConv = await Conversation.findById(conversationId)
+        .populate('participants', 'username displayName avatarUrl firstName lastName email');
+
       // Tạo tin nhắn hệ thống
       try {
         const leavingUser = await User.findById(userId);
         if (leavingUser) {
           const systemContent = `${leavingUser.displayName || leavingUser.username} đã rời khỏi nhóm`;
 
-          await Message.create({
+          const systemMessage = await Message.create({
             conversationId,
             senderId: new Types.ObjectId("000000000000000000000000"),
             content: systemContent,
@@ -815,19 +936,63 @@ export class ConversationService {
           // Cập nhật lastMessage
           await Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: {
+              messageId: systemMessage._id,
               content: systemContent,
               senderId: new Types.ObjectId("000000000000000000000000"),
               sentAt: new Date(),
               type: "system"
             }
           });
+
+          // 🔔 Emit notifications via Socket.IO
+          try {
+            const io = getIO();
+
+            // 1. Broadcast system message to everyone in the room (including the leaving user if still connected)
+            io.to(`conversation_${conversationId}`).emit("NEW_MESSAGE", {
+              conversationId,
+              message: await systemMessage.populate('senderId', 'username displayName avatarUrl')
+            });
+
+            // 2. Notify the room about the member leaving
+            io.to(`conversation_${conversationId}`).emit("GROUP_MEMBER_LEFT", {
+              conversationId: conversationId.toString(),
+              userId: strUserId,
+              updatedConversation: updatedConv, // Send full updated conversation
+              message: systemContent
+            });
+
+            // 3. Notify remaining members via MESSAGE_NOTIFICATION (for sidebar update)
+            if (updatedConv && updatedConv.participants) {
+              const populatedMessage = await systemMessage.populate('senderId', 'username displayName avatarUrl');
+              updatedConv.participants.forEach((p: any) => {
+                const pId = p._id.toString();
+                io.to(`user_${pId}`).emit("NEW_MESSAGE_NOTIFICATION", {
+                  message: populatedMessage,
+                  conversation: updatedConv,
+                  unreadCount: (updatedConv.unreadCount?.get(pId) || 0),
+                  from: 'system'
+                });
+
+                io.to(`user_${pId}`).emit("UNREAD_COUNT_CHANGED", {
+                  conversationId: conversationId.toString(),
+                  unreadCount: (updatedConv.unreadCount?.get(pId) || 0)
+                });
+              });
+            }
+
+            // 4. Force leaving user to leave the conversation room if they have an active socket
+            const sockets = await io.in(`user_${strUserId}`).fetchSockets();
+            sockets.forEach(s => {
+              s.leave(`conversation_${conversationId}`);
+            });
+          } catch (socketError) {
+            console.error("⚠️ Socket notification error in leaveConversation:", socketError);
+          }
         }
       } catch (sysErr) {
         console.error("Lỗi tạo tin nhắn hệ thống khi rời cuộc hội thoại:", sysErr);
       }
-
-      const updatedConv = await Conversation.findById(conversationId)
-        .populate('participants', 'username displayName avatarUrl firstName lastName email');
 
       return {
         success: true,

@@ -16,6 +16,7 @@ import { testCloudinaryConfig } from './utils/testCloudinary';
 import messageRoute from './routes/messageRoute';
 import groupInvitationRoute from './routes/groupInvitationsRoute';
 
+import { setIO } from './libs/socket';
 
 // Cấu hình dotenv để sử dụng biến môi trường từ file .env
 dotenv.config();
@@ -34,6 +35,9 @@ const io = new Server(server, {
   transports: ['websocket', 'polling'],
   allowEIO3: true
 });
+
+// ✅ Initialize global IO instance for use in services
+setIO(io);
 
 // ✅ Apply Socket.IO authentication middleware
 io.use(socketAuthMiddleware);

@@ -336,39 +336,35 @@ export const registerMessageHandler = (
   // 💬 User đang gõ (typing indicator)
   socket.on("TYPING_START", (data: {
     conversationId: string;
-    receiverId: string;
   }) => {
-    const { conversationId, receiverId } = data;
+    const { conversationId } = data;
     const userId = socket.data.userId;
 
     if (userId) {
-      const recipient = onlineUsers.find(u => u.userId === receiverId);
-      if (recipient) {
-        io.to(recipient.socketId).emit("USER_TYPING", {
-          conversationId,
-          userId,
-          isTyping: true
-        });
-      }
+      const roomName = `conversation_${conversationId}`;
+      // Broadcast to EVERYONE in the room EXCEPT the sender
+      socket.to(roomName).emit("USER_TYPING", {
+        conversationId,
+        userId,
+        isTyping: true
+      });
     }
   });
 
   socket.on("TYPING_STOP", (data: {
     conversationId: string;
-    receiverId: string;
   }) => {
-    const { conversationId, receiverId } = data;
+    const { conversationId } = data;
     const userId = socket.data.userId;
 
     if (userId) {
-      const recipient = onlineUsers.find(u => u.userId === receiverId);
-      if (recipient) {
-        io.to(recipient.socketId).emit("USER_TYPING", {
-          conversationId,
-          userId,
-          isTyping: false
-        });
-      }
+      const roomName = `conversation_${conversationId}`;
+      // Broadcast to EVERYONE in the room EXCEPT the sender
+      socket.to(roomName).emit("USER_TYPING", {
+        conversationId,
+        userId,
+        isTyping: false
+      });
     }
   });
 

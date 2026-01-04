@@ -37,8 +37,8 @@ interface MessageState {
     markAllAsRead: (conversationId: string) => void;
     deleteMessage: (messageId: string) => void;
     editMessage: (messageId: string, newContent: string) => void;
-    startTyping: (conversationId: string, receiverId: string) => void;
-    stopTyping: (conversationId: string, receiverId: string) => void;
+    startTyping: (conversationId: string) => void;
+    stopTyping: (conversationId: string) => void;
     joinConversation: (conversationId: string) => void;
     leaveConversation: (conversationId: string) => void;
     setCurrentConversation: (conversationId: string | null) => void;
@@ -177,15 +177,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     /**
      * Bắt đầu typing
      */
-    startTyping: (conversationId: string, receiverId: string) => {
-        messageService.startTyping({ conversationId, receiverId });
+    startTyping: (conversationId: string) => {
+        messageService.startTyping({ conversationId });
     },
 
     /**
      * Dừng typing
      */
-    stopTyping: (conversationId: string, receiverId: string) => {
-        messageService.stopTyping({ conversationId, receiverId });
+    stopTyping: (conversationId: string) => {
+        messageService.stopTyping({ conversationId });
     },
 
     /**

@@ -286,7 +286,7 @@ export interface MessageEditedResponse {
 // Typing Indicator
 export interface TypingPayload {
   conversationId: string;
-  receiverId: string;
+  receiverId?: string;
 }
 
 export interface UserTypingResponse {
