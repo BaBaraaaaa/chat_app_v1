@@ -13,19 +13,6 @@ export class MessageController {
     try {
       // Gửi message qua MessageService
       const result = await MessageService.sendMessage(params);
-
-      if (result.success) {
-        // Cập nhật lastMessage trong conversation
-        await ConversationService.updateLastMessage(
-          params.conversationId,
-          {
-            content: params.content,
-            senderId: params.senderId,
-            type: params.type || 'text'
-          }
-        );
-      }
-
       return result;
     } catch (error) {
       console.error("Lỗi trong MessageController.sendMessage:", error);
@@ -47,12 +34,12 @@ export class MessageController {
     skip: number = 0
   ) {
     try {
-      const convId = typeof conversationId === 'string' 
-        ? new Types.ObjectId(conversationId) 
+      const convId = typeof conversationId === 'string'
+        ? new Types.ObjectId(conversationId)
         : conversationId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await MessageService.getMessages(convId, userObjectId, limit, skip);
@@ -75,12 +62,12 @@ export class MessageController {
     cursor?: string
   ) {
     try {
-      const convId = typeof conversationId === 'string' 
-        ? new Types.ObjectId(conversationId) 
+      const convId = typeof conversationId === 'string'
+        ? new Types.ObjectId(conversationId)
         : conversationId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
       return await MessageService.getMessagesByCursor(convId, userObjectId, limit, cursor);
     } catch (error) {
@@ -101,12 +88,12 @@ export class MessageController {
     userId: Types.ObjectId | string
   ) {
     try {
-      const msgId = typeof messageId === 'string' 
-        ? new Types.ObjectId(messageId) 
+      const msgId = typeof messageId === 'string'
+        ? new Types.ObjectId(messageId)
         : messageId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await MessageService.markAsRead(msgId, userObjectId);
@@ -128,12 +115,12 @@ export class MessageController {
     userId: Types.ObjectId | string
   ) {
     try {
-      const convId = typeof conversationId === 'string' 
-        ? new Types.ObjectId(conversationId) 
+      const convId = typeof conversationId === 'string'
+        ? new Types.ObjectId(conversationId)
         : conversationId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       const result = await MessageService.markAllAsRead(convId, userObjectId);
@@ -162,12 +149,12 @@ export class MessageController {
     userId: Types.ObjectId | string
   ) {
     try {
-      const msgId = typeof messageId === 'string' 
-        ? new Types.ObjectId(messageId) 
+      const msgId = typeof messageId === 'string'
+        ? new Types.ObjectId(messageId)
         : messageId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await MessageService.deleteMessage(msgId, userObjectId);
@@ -190,12 +177,12 @@ export class MessageController {
     newContent: string
   ) {
     try {
-      const msgId = typeof messageId === 'string' 
-        ? new Types.ObjectId(messageId) 
+      const msgId = typeof messageId === 'string'
+        ? new Types.ObjectId(messageId)
         : messageId;
-      
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
 
       return await MessageService.editMessage(msgId, userObjectId, newContent);
@@ -217,13 +204,13 @@ export class MessageController {
     conversationId?: Types.ObjectId | string
   ) {
     try {
-      const userObjectId = typeof userId === 'string' 
-        ? new Types.ObjectId(userId) 
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
         : userId;
-      
-      const convId = conversationId 
-        ? (typeof conversationId === 'string' 
-          ? new Types.ObjectId(conversationId) 
+
+      const convId = conversationId
+        ? (typeof conversationId === 'string'
+          ? new Types.ObjectId(conversationId)
           : conversationId)
         : undefined;
 
@@ -233,6 +220,33 @@ export class MessageController {
       return {
         success: false,
         message: "Lỗi lấy số lượng tin nhắn chưa đọc",
+        error
+      };
+    }
+  }
+
+  /**
+   * Xóa toàn bộ lịch sử trò chuyện trong conversation
+   */
+  async clearChat(
+    conversationId: Types.ObjectId | string,
+    userId: Types.ObjectId | string
+  ) {
+    try {
+      const convId = typeof conversationId === 'string'
+        ? new Types.ObjectId(conversationId)
+        : conversationId;
+
+      const userObjectId = typeof userId === 'string'
+        ? new Types.ObjectId(userId)
+        : userId;
+
+      return await MessageService.clearConversationMessages(convId, userObjectId);
+    } catch (error) {
+      console.error("Lỗi trong MessageController.clearChat:", error);
+      return {
+        success: false,
+        message: "Lỗi xóa lịch sử trò chuyện",
         error
       };
     }

@@ -43,6 +43,7 @@ interface MessageState {
     leaveConversation: (conversationId: string) => void;
     setCurrentConversation: (conversationId: string | null) => void;
     clearMessages: (conversationId: string) => void;
+    clearChat: (conversationId: string) => Promise<void>;
 
     // Socket listeners
     setupSocketListeners: () => void;
@@ -209,7 +210,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     },
 
     /**
-     * Clear messages for conversation
+     * Clear messages for conversation (Local only)
      */
     clearMessages: (conversationId: string) => {
         set(state => {
@@ -217,6 +218,40 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             delete newMessages[conversationId];
             return { messages: newMessages };
         });
+    },
+
+    /**
+     * Clear chat history (Backend + Local)
+     */
+    clearChat: async (conversationId: string) => {
+        try {
+            set({ loading: true });
+            const response = await messageApiService.clearChat(conversationId);
+            if (response.success) {
+                // Clear local messages
+                get().clearMessages(conversationId);
+
+                // Reset cursor
+                set(state => ({
+                    cursor: { ...state.cursor, [conversationId]: null },
+                    hasMore: { ...state.hasMore, [conversationId]: false }
+                }));
+
+                // Update lastMessage in conversation sidebar
+                useConversationStore.getState()._updateConversation(conversationId, {
+                    lastMessage: undefined
+                });
+
+                toast.success("Đã xóa lịch sử trò chuyện");
+            } else {
+                toast.error(response.message || "Không thể xóa lịch sử trò chuyện");
+            }
+        } catch (error) {
+            console.error("Failed to clear chat:", error);
+            toast.error("Lỗi khi xóa lịch sử trò chuyện");
+        } finally {
+            set({ loading: false });
+        }
     },
 
     // ==================== SOCKET LISTENERS ====================
@@ -352,6 +387,13 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
             // Update conversation với thông tin mới
             const conversationStore = useConversationStore.getState();
+            const existingConversation = conversationStore.conversations.find(c => c._id === conversationId);
+
+            if (!existingConversation) {
+                conversationStore.getConversations();
+                return;
+            }
+
             conversationStore._updateConversation(conversationId, {
                 lastMessage: {
                     content: message.content,
@@ -359,7 +401,8 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                     sentAt: message.createdAt,
                     type: message.type
                 },
-                unreadCount: unreadCount
+                unreadCount: unreadCount,
+                isActive: true
             });
         });
 

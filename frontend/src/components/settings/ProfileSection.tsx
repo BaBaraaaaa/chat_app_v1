@@ -1,22 +1,23 @@
 import type { User, UpdateProfilePayload } from '@/types/user'
 import { memo } from 'react'
 import { Person, CameraAlt, Edit, Close, Save, Delete } from '@mui/icons-material'
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Avatar, 
-  IconButton, 
-  Chip, 
-  TextField, 
-  Box, 
+import {
+  Card,
+  CardContent,
+  Typography,
+  Avatar,
+  IconButton,
+  Chip,
+  TextField,
+  Box,
   Button,
   CircularProgress,
   Alert,
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Tooltip,
 } from '@mui/material'
 import { useState, useRef } from 'react'
 import { userApiService } from '@/services/userApiService'
@@ -28,7 +29,7 @@ interface ProfileProps {
   user: User | null
 }
 
-const ProfileSection = ({user}: ProfileProps) => {
+const ProfileSection = ({ user }: ProfileProps) => {
   const { updateUser, updateAvatar } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,38 +55,38 @@ const ProfileSection = ({user}: ProfileProps) => {
       setError('Tên hiển thị không được để trống và không quá 50 ký tự');
       return false;
     }
-    
+
     if (formData.bio && !userApiService.validateBio(formData.bio)) {
       setError('Bio không được quá 160 ký tự');
       return false;
     }
-    
+
     if (formData.phone && !userApiService.validatePhone(formData.phone)) {
       setError('Số điện thoại không hợp lệ');
       return false;
     }
-    
+
     return true;
   };
 
   const handleSave = async () => {
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const payload: UpdateProfilePayload = {
         displayName: formData.displayName.trim(),
         bio: formData.bio.trim(),
         phone: formData.phone.trim() || undefined
       };
-      
+
       const response = await userApiService.updateProfile(payload);
-      
+
       // Cập nhật user trong auth store
       updateUser(response.data.user);
-      
+
       toast.success('Cập nhật thông tin thành công!');
       setIsEditing(false);
     } catch (error) {
@@ -145,7 +146,7 @@ const ProfileSection = ({user}: ProfileProps) => {
     handleAvatarMenuClose();
     setIsUploadingAvatar(true);
     try {
-       await userApiService.deleteAvatar();
+      await userApiService.deleteAvatar();
       updateAvatar(null);
       toast.success('Xóa avatar thành công!');
     } catch (error: unknown) {
@@ -163,17 +164,16 @@ const ProfileSection = ({user}: ProfileProps) => {
   const handleCropComplete = async (croppedBlob: Blob) => {
     setIsUploadingAvatar(true);
     setCropperOpen(false);
-    
+
     try {
       // Convert blob to file
-      const croppedFile = new File([croppedBlob], 'avatar.jpg', { 
+      const croppedFile = new File([croppedBlob], 'avatar.jpg', {
         type: 'image/jpeg',
         lastModified: Date.now()
       });
-      
+
       const response = await userApiService.uploadAvatar(croppedFile);
-      if (!response.data.user.avatarUrl)
-      {
+      if (!response.data.user.avatarUrl) {
         toast.error('Không nhận được URL avatar từ server');
         return;
       }
@@ -213,7 +213,7 @@ const ProfileSection = ({user}: ProfileProps) => {
   };
 
   return (
-       <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {/* Avatar and Basic Info */}
       <Card>
         <CardContent>
@@ -228,19 +228,21 @@ const ProfileSection = ({user}: ProfileProps) => {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
             <Box sx={{ position: "relative" }}>
-              <Avatar
-                src={user?.avatarUrl}
-                sx={{
-                  width: 80,
-                  height: 80,
-                  bgcolor: "primary.main",
-                  fontSize: "2rem",
-                  cursor: "pointer"
-                }}
-                onClick={handleAvatarClick}
-              >
-                {!user?.avatarUrl && (user?.displayName?.charAt(0) || "U")}
-              </Avatar>
+              <Tooltip title="Nhấp để thay đổi hoặc xóa avatar">
+                <Avatar
+                  src={user?.avatarUrl}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    bgcolor: "primary.main",
+                    fontSize: "2rem",
+                    cursor: "pointer"
+                  }}
+                  onClick={handleAvatarClick}
+                >
+                  {!user?.avatarUrl && (user?.displayName?.charAt(0) || "U")}
+                </Avatar>
+              </Tooltip>
               <IconButton
                 size="small"
                 disabled={isUploadingAvatar}
@@ -260,7 +262,7 @@ const ProfileSection = ({user}: ProfileProps) => {
                   <CameraAlt fontSize="small" />
                 )}
               </IconButton>
-              
+
               {/* Avatar Menu */}
               <Menu
                 anchorEl={avatarMenuAnchor}
@@ -284,7 +286,7 @@ const ProfileSection = ({user}: ProfileProps) => {
                   </MenuItem>
                 )}
               </Menu>
-              
+
               {/* Hidden file input */}
               <input
                 ref={fileInputRef}
@@ -423,7 +425,7 @@ const ProfileSection = ({user}: ProfileProps) => {
           </Box>
         </CardContent>
       </Card>
-      
+
       {/* Avatar Cropper Dialog */}
       {selectedImage && (
         <AvatarCropper

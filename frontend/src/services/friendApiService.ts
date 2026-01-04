@@ -2,17 +2,17 @@ import api from "@/lib/axios";
 
 export const friendService = {
 
-    // Lấy danh sách bạn bè
-    getFriendsList: async () => {
-        const res = await api.get("/friends/list", { withCredentials: true });
-        return res.data;
-    },
+  // Lấy danh sách bạn bè
+  getFriendsList: async () => {
+    const res = await api.get("/friends/list", { withCredentials: true });
+    return res.data;
+  },
   // Gửi lời mời kết bạn (hỗ trợ cả userId và username)
   sendFriendRequest: async (identifier: string, message?: string, isUsername = false) => {
-    const payload = isUsername 
+    const payload = isUsername
       ? { toUsername: identifier, message }
       : { toUserId: identifier, message };
-      
+
     const res = await api.post(
       "/friends/send",
       payload,
@@ -82,11 +82,4 @@ export const friendService = {
     return res.data;
   },
 
-  // Tìm kiếm người dùng
-  searchUsers: async (query: string) => {
-    const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`, { 
-      withCredentials: true 
-    });
-    return res.data;
-  },
 };

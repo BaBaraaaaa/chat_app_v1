@@ -12,6 +12,7 @@ export interface IConversation extends Document {
   name?: string; // Tên nhóm
   avatarUrl?: string; // Avatar nhóm
   lastMessage?: {
+    messageId: Types.ObjectId;
     content: string;
     senderId: Types.ObjectId;
     sentAt: Date;
@@ -19,6 +20,7 @@ export interface IConversation extends Document {
   };
   unreadCount: Map<string, number>; // userId -> unread count
   isActive: boolean;
+  hiddenBy: Types.ObjectId[]; // Danh sách user ẩn cuộc hội thoại này
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +44,7 @@ const ConversationSchema = new Schema<IConversation>(
     name: { type: String }, // Tên nhóm
     avatarUrl: { type: String }, // Avatar nhóm
     lastMessage: {
+      messageId: { type: Schema.Types.ObjectId, ref: "Message" },
       content: { type: String },
       senderId: { type: Schema.Types.ObjectId, ref: "User" },
       sentAt: { type: Date },
@@ -55,7 +58,13 @@ const ConversationSchema = new Schema<IConversation>(
     isActive: {
       type: Boolean,
       default: true
-    }
+    },
+    hiddenBy: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User"
+      }
+    ]
   },
   {
     timestamps: true
@@ -65,6 +74,7 @@ const ConversationSchema = new Schema<IConversation>(
 // Index để tìm conversation giữa 2 user nhanh
 ConversationSchema.index({ participants: 1 });
 ConversationSchema.index({ "lastMessage.sentAt": -1 });
+ConversationSchema.index({ hiddenBy: 1 });
 
 // Method để tìm hoặc tạo conversation giữa 2 users
 ConversationSchema.statics.findOrCreateDirectConversation = async function (
@@ -85,8 +95,17 @@ ConversationSchema.statics.findOrCreateDirectConversation = async function (
       unreadCount: new Map([
         [userId1.toString(), 0],
         [userId2.toString(), 0]
-      ])
+      ]),
+      hiddenBy: []
     });
+  } else {
+    // Nếu conversation đã tồn tại, xóa user khỏi hiddenBy nếu họ đang ở đó
+    if (conversation.hiddenBy && (conversation.hiddenBy.includes(userId1) || conversation.hiddenBy.includes(userId2))) {
+      await this.findByIdAndUpdate(conversation._id, {
+        $pull: { hiddenBy: { $in: [userId1, userId2] } }
+      });
+      conversation = await this.findById(conversation._id);
+    }
   }
 
   return conversation;

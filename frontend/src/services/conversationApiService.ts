@@ -107,7 +107,7 @@ export const conversationApiService = {
   },
 
   /**
-   * Xóa conversation
+   * Xóa conversation [REST Fallback - Socket preferred]
    * Backend endpoint: DELETE /api/conversations/:id
    */
   deleteConversation: async (conversationId: string): Promise<SimpleResponse> => {
