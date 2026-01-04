@@ -25,7 +25,6 @@ class SocketService {
   private socket: Socket | null = null;
   private readonly SERVER_URL: string;
   private isConnecting: boolean = false;
-  private isLoggingOut: boolean = false;
   constructor() {
     this.SERVER_URL =
       import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
@@ -85,7 +84,6 @@ class SocketService {
     });
   }
   logout(): void {
-    this.isLoggingOut = true;
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -94,7 +92,6 @@ class SocketService {
   }
 
   disconnect(): void {
-    this.isLoggingOut = false;
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;

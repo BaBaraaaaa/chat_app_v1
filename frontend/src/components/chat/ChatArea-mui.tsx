@@ -63,7 +63,7 @@ export default function ChatAreaMui({
   const [editingContent, setEditingContent] = useState<string>('');
   const [groupSettingsOpen, setGroupSettingsOpen] = useState(false); // State for settings dialog
 
-  const { editMessage, deleteMessage, clearChat } = useMessageStore();
+  const { editMessage, deleteMessage } = useMessageStore();
   const { deleteConversation, setCurrentConversation } = useConversationStore();
   const open = Boolean(anchorEl);
 
