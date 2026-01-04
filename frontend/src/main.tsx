@@ -1,6 +1,4 @@
 import { createRoot } from "react-dom/client";
-import "./index.mui.css";
-import "./styles/responsive.css";
 import App from "./App.tsx";
 import { CustomMuiThemeProvider } from "./theme/MuiThemeProvider.tsx";
 

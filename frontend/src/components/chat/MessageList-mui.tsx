@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  useTheme,
 } from "@mui/material";
 import { KeyboardArrowDown } from "@mui/icons-material";
 import type { Message } from "@/types/message";
@@ -28,46 +29,82 @@ interface MessageListProps {
   loading?: boolean;
 }
 
-// Memoized typing indicator
-const TypingIndicator = memo(({ userInitial, userAvatar }: { userInitial: string; userAvatar?: string }) => (
-  <Box sx={{ display: "flex", alignItems: "start", gap: 1, mb: 1 }}>
-    <Avatar
-      src={userAvatar}
-      alt={userInitial}
-      sx={{ width: 32, height: 32, bgcolor: "grey.400", fontSize: "0.875rem" }}
-    >
-      {userInitial}
-    </Avatar>
-    <Box
-      sx={{
-        px: 2,
-        py: 1.5,
-        borderRadius: "16px 16px 16px 4px",
-        bgcolor: "grey.100",
-      }}
-    >
-      <Box sx={{ display: "flex", gap: 0.5 }}>
-        {[0, 1, 2].map((i) => (
+// Memoized typing indicator — improved: shows name, aria-live, refined animation
+const TypingIndicator = memo(
+  ({ userName, userAvatar }: { userName?: string; userAvatar?: string }) => {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === "dark";
+    const initial = (userName?.charAt(0) || "U").toUpperCase();
+
+    const typingKeyframes = {
+      "@keyframes typingBounce": {
+        "0%, 80%, 100%": { transform: "scale(0)", opacity: 0.35 },
+        "40%": { transform: "scale(1)", opacity: 1 },
+      },
+    };
+
+    return (
+      <Box
+        role="status"
+        aria-live="polite"
+        sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 1 }}
+      >
+        <Avatar
+          src={userAvatar}
+          alt={userName || initial}
+          sx={{
+            width: 32,
+            height: 32,
+            bgcolor: isDark ? "#2a2a2a" : "#e0e0e0",
+            color: isDark ? "#fff" : "#000",
+            fontSize: "0.875rem",
+          }}
+        >
+          {initial}
+        </Avatar>
+
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+          {userName && (
+            <Typography variant="caption" sx={{ color: isDark ? "#bbb" : "#555" }}>
+              {userName}
+            </Typography>
+          )}
+
           <Box
-            key={i}
             sx={{
-              width: 8,
-              height: 8,
-              bgcolor: "grey.600",
-              borderRadius: "50%",
-              animation: "bounce 1.4s infinite ease-in-out both",
-              animationDelay: `${i * 150}ms`,
-              "@keyframes bounce": {
-                "0%, 80%, 100%": { transform: "scale(0)" },
-                "40%": { transform: "scale(1)" },
-              },
+              px: 2,
+              py: 1.25,
+              borderRadius: "16px 16px 16px 4px",
+              bgcolor: isDark ? "#1e1e1e" : "#f5f5f5",
+              border: isDark ? "1px solid #2f2f2f" : "1px solid #ddd",
+              boxShadow: isDark
+                ? "0 2px 6px rgba(0,0,0,0.6)"
+                : "0 2px 6px rgba(0,0,0,0.15)",
+              color: isDark ? "#e0e0e0" : "#555",
+              ...typingKeyframes,
             }}
-          />
-        ))}
+          >
+            <Box sx={{ display: "flex", gap: 0.75 }}>
+              {[0, 1, 2].map((i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    bgcolor: "currentColor",
+                    animation: "typingBounce 1.2s infinite ease-in-out",
+                    animationDelay: `${i * 0.15}s`,
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+        </Box>
       </Box>
-    </Box>
-  </Box>
-));
+    );
+  }
+);
 
 function MessageListMui({ messages, onEdit, onDelete, onLoadMore, hasMore, loading: parentLoading }: MessageListProps) {
   const { user } = useAuthStore();
@@ -288,7 +325,7 @@ function MessageListMui({ messages, onEdit, onDelete, onLoadMore, hasMore, loadi
                   return (
                     <TypingIndicator
                       key={typingUserId}
-                      userInitial={typingUser.displayName?.charAt(0) || "U"}
+                      userName={typingUser.displayName}
                       userAvatar={typingUser.avatarUrl}
                     />
                   );
